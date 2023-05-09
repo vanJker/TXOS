@@ -11,27 +11,29 @@ mov es, ax
 mov ss, ax
 mov sp, 0x7c00
 
-; 0xb8000 是文本显示器的内存映射区域
-mov ax, 0xb800
-mov ds, ax
-mov byte [0], 'H'
-mov byte [2], 'e'
-mov byte [4], 'l'
-mov byte [6], 'l'
-mov byte [8], 'o'
-mov byte [10], ','
-mov byte [12], ' '
-mov byte [14], 'L'
-mov byte [16], 'o'
-mov byte [18], 'o'
-mov byte [20], 'n'
-mov byte [22], 'g'
-mov byte [24], 'O'
-mov byte [26], 'S'
-mov byte [28], '!'
+; bochs 魔术阻塞 magic_break
+xchg bx, bx
+
+mov si, booting
+call print
 
 ; 程序结束，进行阻塞
 jmp $
+
+print:
+    mov ah, 0x0e
+.next:
+    mov al, [si]
+    cmp al, 0
+    jz .done
+    int 0x10
+    inc si
+    jmp .next
+.done:
+    ret
+
+booting:
+    db "Booting LoongOS...", 10, 13, 0  ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
 
 ; 填充 0
 times 510 - ($ - $$) db 0
