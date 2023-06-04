@@ -1,0 +1,7 @@
+
+*.img
+*.ini
+*.bin
+*.lock
+bochsrc
+docs/
