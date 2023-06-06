@@ -14,28 +14,20 @@ mov sp, 0x7c00
 ; bochs 魔术阻塞 magic_break
 ; xchg bx, bx
 
+; 打印 booting 信息
 mov si, booting
 call print
 
-xchg bx, bx
-
 ; 读取硬盘的内容到指定的内存地址处
 mov edi, 0x1000     ; 读取硬盘到的目标内存地址
-mov ecx, 0          ; 起始扇区的编号
-mov bl, 1           ; 读取的扇区数量
+mov ecx, 2          ; 起始扇区的编号
+mov bl,  4          ; 读取的扇区数量
 
 call read_disk
 
-xchg bx, bx
-
-; 将指定内存地址处的内容写入到硬盘
-mov edi, 0x1000     ; 要写入的数据在内存的起始地址
-mov ecx, 2          ; 起始扇区的编号
-mov bl, 1           ; 写入的扇区数量
-
-call write_disk
-
-xchg bx, bx
+cmp word [0x1000], 0x55aa
+jnz error
+jmp 0:0x1002
 
 ; 程序结束，进行阻塞
 jmp $
@@ -195,6 +187,12 @@ print:
 .done:
     ret
 
+error:
+    mov si, .msg
+    call print
+    hlt     ; CPU 停机
+    jmp $
+    .msg db "Booting Error!", 10, 13, 0
 
 booting:
     db "Booting LoongOS...", 10, 13, 0  ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
