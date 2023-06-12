@@ -34,8 +34,6 @@ detect_memory:
     call print
 
 enable_protected_mode:
-    xchg bx, bx ; 断点
-
     ; 关闭中断
     cli
 
@@ -52,7 +50,6 @@ enable_protected_mode:
     or eax, 0x1
     mov cr0, eax
 
-    xchg bx, bx ; 断点
     ; 通过跳转来刷新缓存，同时加载代码段选择子到代码段寄存器，从而执行保护模式下的指令
     jmp dword code_selector:protected_mode
 
@@ -77,15 +74,14 @@ error:
     .msg db "Loading Error!", 10, 13, 0
 
 loading:
-    db "Loading LoongOS...", 10, 13, 0  ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
+    db "Loading XOS...", 10, 13, 0 ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
 
 detecting:
-    db "Detecting Memory Success...", 10, 13, 0  ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
+    db "Detecting Memory Success...", 10, 13, 0 ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
 
 
 [bits 32]
 protected_mode:
-    xchg bx, bx ; 断点
     ; 在 32 位保护模式下初始化段寄存器
     mov ax, data_selector
     mov ds, ax
@@ -97,11 +93,87 @@ protected_mode:
     ; 修改栈顶，这里只是随意制定了一个地址，因为还没有用到栈
     mov esp, 0x10000
 
-    ; 现在可以随意访问 32 位的地址了
-    mov byte [0xb8000], 'P'
-    mov byte [0x200000], 'P'
+    ; 读取硬盘的内容到指定的内存地址处
+    mov edi, 0x10000     ; 读取硬盘到的目标内存地址
+    mov ecx, 10          ; 起始扇区的编号
+    mov bl,  200         ; 读取的扇区数量
 
-    jmp $ ; 阻塞
+    call read_disk
+
+    jmp 0x10000 ; 进入内核
+
+    ud2 ; 表示出错
+
+
+read_disk:
+    ; 设置读取扇区的数量
+    mov dx, 0x1f2   ; 0x1f2 端口
+    mov al, bl
+    out dx, al
+
+    ; 设置起始扇区的编号
+    inc dx          ; 0x1f3 端口
+    mov al, cl      ; 起始扇区编号的 0-7 位
+    out dx, al
+
+    inc dx          ; 0x1f4 端口
+    shr ecx, 8      ; 寄存器 ecx 逻辑右移 8 位
+    mov al, cl      ; 起始扇区编号的 8-15 位
+    out dx, al
+
+    inc dx          ; 0x1f5 端口
+    shr ecx, 8      ; 寄存器 ecx 逻辑右移 8 位
+    mov al, cl      ; 起始扇区编号的 16-23 位
+    out dx, al
+
+    inc dx          ; 0x1f6 端口
+    shr ecx, 8      ; 寄存器 ecx 逻辑右移 8 位
+    and cl, 0x0f    ; 将寄存器 cl 的高 4 位置零
+
+    mov al, 0xe0    ; 将 0x1f6 端口 5-7 位置 1，即主盘 - LBA 模式
+    or al, cl
+    out dx, al
+
+    inc dx          ; 0x1f7 端口
+    mov al, 0x20    ; 设置为读硬盘操作
+    out dx, al
+
+    xor ecx, ecx    ; 将寄存器 ecx 清空
+    mov cl, bl      ; 将 cl 置为读取扇区的数量，配合后续的 loop 指令使用
+
+    .read:
+        push cx     ; 保存 cx（因为 .reads 中修改了 cx 的值）
+        call .waitr; 等待硬盘数据准备完毕
+        call .reads
+        pop cx      ; 恢复 cx
+        loop .read
+
+    ret
+
+    .waitr:
+        mov dx, 0x1f7   ; 0x1f7 端口
+        .check:
+            in al, dx
+            jmp $+2         ; 直接跳转到下一条指令，相当于 nop，其作用为提供延迟
+            jmp $+2
+            jmp $+2
+            and al, 0x08    ; 保留 0x1f7 端口的第 3 位
+            cmp al, 0x08    ; 判断数据是否准备完毕
+            jnz .check
+        ret
+    
+    .reads:
+        mov dx, 0x1f0   ; 0x1f0 端口（为 16 bit 的寄存器）
+        mov cx, 256     ; 一个扇区一般是 512 字节（即 256 字）
+        .readword:
+            in ax, dx
+            jmp $+2         ; 提供延迟
+            jmp $+2
+            jmp $+2
+            mov [edi], ax   ; 将读取数据写入到指定的内存地址处
+            add edi, 2
+            loop .readword
+        ret
 
 
 code_selector equ (1 << 3) ; 代码段选择子
