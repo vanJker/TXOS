@@ -6,7 +6,7 @@ BOOT_BIN := $(TARGET)/bootloader/boot.bin
 LOADER_BIN := $(TARGET)/bootloader/loader.bin
 IMG := $(TARGET)/master.img
 
-KERNEL_ENTRY := 0x10000 # 内核起始位置
+KERNEL_LINKER := $(SRC)/kernel/linker.ld
 KERNEL_ELF := $(TARGET)/kernel.elf
 KERNEL_BIN := $(TARGET)/kernel.bin
 KERNEL_MAP := $(TARGET)/kernel.map
@@ -47,7 +47,7 @@ $(TARGET)/kernel/%.o: $(SRC)/kernel/%.c
 
 $(KERNEL_ELF): $(KERNEL_OBJS)
 	$(shell mkdir -p $(dir $@))
-	ld -m elf_i386 -static $^ -o $@ -Ttext $(KERNEL_ENTRY)
+	ld -m elf_i386 -static $^ -o $@ -T $(KERNEL_LINKER)
 
 $(KERNEL_BIN): $(KERNEL_ELF)
 	objcopy -O binary $< $@

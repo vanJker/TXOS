@@ -2,6 +2,7 @@
 
 extern kernel_init
 
+section .text.entry
 global _start
 _start:
     xchg bx, bx
