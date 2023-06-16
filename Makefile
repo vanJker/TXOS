@@ -32,7 +32,7 @@ INCLUDE_FLAGS := -I $(SRC)/include # 头文件查找路径参数
 
 
 .PHONY: all
-all: bochs-run
+all: qemu-run
 
 $(TARGET)/bootloader/%.bin: $(SRC)/bootloader/%.asm
 	$(shell mkdir -p $(dir $@))
@@ -75,3 +75,23 @@ bochs-run: $(IMG)
 .PHONY: bochs-debug
 bochs-debug: $(IMG)
 	bochs-gdb -q -f ./bochs/bochsrc-gdb
+
+QEMU := qemu-system-i386
+QEMU_FLAGS := -m 32M \
+				-boot c \
+				-hda $(IMG)
+
+.PHONY: qemu-run
+qemu-run: $(IMG)
+	$(QEMU) $(QEMU_FLAGS)
+
+.PHONY: qemu-debug
+qemu-debug: $(IMG)
+	$(QEMU) $(QEMU_FLAGS) -s -S
+
+VMDK := $(TARGET)/master.vmdk
+$(VMDK): $(IMG)
+	qemu-img convert -pO vmdk $< $@
+
+.PHONY: vmdk
+vmdk: $(VMDK)

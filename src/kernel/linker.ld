@@ -8,6 +8,7 @@ SECTIONS
 
     stext = .;
     .text : {
+        *(.text.entry)
         *(.text .text.*)
     }
 
