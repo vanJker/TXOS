@@ -2,8 +2,15 @@
 *.img
 *.ini
 *.bin
+*.sym
+*.o
+*.out
 *.lock
-bochsrc
+*.tar.*
+
+bochs/src
+bochs/pkg
+
 docs/
 target/
 tests/

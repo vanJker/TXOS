@@ -8,7 +8,6 @@ SECTIONS
 
     stext = .;
     .text : {
-        *(.text.entry)
         *(.text .text.*)
     }
 
@@ -47,5 +46,6 @@ SECTIONS
 
     /DISCARD/ : {
         *(.eh_frame)
+        *(.debug_info)
     }
 }

@@ -7,9 +7,10 @@ LOADER_BIN := $(TARGET)/bootloader/loader.bin
 IMG := $(TARGET)/master.img
 
 KERNEL_LINKER := $(SRC)/kernel/linker.ld
+KERNEL_ENTRY := 0x10000
 KERNEL_ELF := $(TARGET)/kernel.elf
 KERNEL_BIN := $(TARGET)/kernel.bin
-KERNEL_MAP := $(TARGET)/kernel.map
+KERNEL_SYM := $(TARGET)/kernel.map
 
 KERNEL_SRCS := $(wildcard $(SRC)/kernel/*.asm)
 KERNEL_OBJS := $(patsubst $(SRC)/kernel/%.asm, $(TARGET)/kernel/%.o, $(KERNEL_SRCS))
@@ -31,7 +32,7 @@ INCLUDE_FLAGS := -I $(SRC)/include # 头文件查找路径参数
 
 
 .PHONY: all
-all: bochs
+all: bochs-run
 
 $(TARGET)/bootloader/%.bin: $(SRC)/bootloader/%.asm
 	$(shell mkdir -p $(dir $@))
@@ -47,12 +48,12 @@ $(TARGET)/kernel/%.o: $(SRC)/kernel/%.c
 
 $(KERNEL_ELF): $(KERNEL_OBJS)
 	$(shell mkdir -p $(dir $@))
-	ld -m elf_i386 -static $^ -o $@ -T $(KERNEL_LINKER)
+	ld -m elf_i386 -static $^ -o $@ -Ttext $(KERNEL_ENTRY)
 
 $(KERNEL_BIN): $(KERNEL_ELF)
 	objcopy -O binary $< $@
 
-$(KERNEL_MAP): $(KERNEL_ELF)
+$(KERNEL_SYM): $(KERNEL_ELF)
 	nm $< | sort > $@
 
 
@@ -67,6 +68,10 @@ $(IMG): $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN)
 clean:
 	rm -rf $(TARGET)/*
 
-.PHONY: bochs 
-bochs: $(IMG)
-	bochs -q
+.PHONY: bochs-run
+bochs-run: $(IMG)
+	bochs -q -f ./bochs/bochsrc
+
+.PHONY: bochs-debug
+bochs-debug: $(IMG)
+	bochs-gdb -q -f ./bochs/bochsrc-gdb
