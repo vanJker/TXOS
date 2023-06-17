@@ -13,4 +13,5 @@ hello.s: hello.c
 
 .PHONY: clean
 clean:
-	rm -rf *.out *.o
+	rm -rf *.o
+	rm -rf *.out
