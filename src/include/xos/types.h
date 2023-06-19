@@ -2,7 +2,8 @@
 #define XOS_TYPES_H
 
 #define EOF -1 // End Of File 文件结束符
-#define NULL 0 // 空指针
+#define NULL ((void *)0) // 空指针
+#define EOS '\0' // 字符串结束符
 
 #define bool  _Bool // C99 定义的关键字是 _Bool
 #define true  1

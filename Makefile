@@ -16,6 +16,7 @@ KERNEL_SYM := $(TARGET)/kernel.map
 KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/main.o \
 			   $(TARGET)/kernel/io.o \
+			   $(TARGET)/lib/string.o \
 
 # gcc 参数
 CFLAGS := -m32			# 生成 32 位机器上的程序
@@ -43,6 +44,10 @@ $(TARGET)/kernel/%.o: $(SRC)/kernel/%.asm
 	nasm -f elf32 $(DEBUG_FLAGS) $< -o $@
 
 $(TARGET)/kernel/%.o: $(SRC)/kernel/%.c
+	$(shell mkdir -p $(dir $@))
+	gcc $(CFLAGS) $(DEBUG_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+
+$(TARGET)/lib/%.o: $(SRC)/lib/%.c
 	$(shell mkdir -p $(dir $@))
 	gcc $(CFLAGS) $(DEBUG_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
@@ -78,8 +83,8 @@ bochs-debug: $(IMG)
 
 QEMU := qemu-system-i386
 QFLAGS := -m 32M \
-				-boot c \
-				-hda $(IMG)
+			-boot c \
+			-hda $(IMG) \
 
 .PHONY: qemu-run
 qemu-run: $(IMG)
