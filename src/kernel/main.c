@@ -1,15 +1,23 @@
 #include <xos/xos.h>
+#include <xos/types.h>
+#include <xos/io.h>
 
-int magic = XOS_MAGIC;
-char msg[] = "Hello XOS!!!"; // .data
-char buf[1024];              // .bss
+#define CRT_ADDR_PORT 0x3d4
+#define CRT_DATA_PORT 0x3d5
+
+#define CRT_CURSOR_H 0xe
+#define CRT_CURSOR_L 0xf
 
 void kernel_init() {
-    int i;
-    char *tty = (char *)0xb8000; // 文本显示器所在的内存地址
-    for (i = 0; i < sizeof(msg); i++) {
-        tty[i * 2] = msg[i];
-        tty[i*2+1] = 0x02; // 文本显示为绿色
-    }
+    outb(CRT_ADDR_PORT, CRT_CURSOR_H);
+    u16 pos = inb(CRT_DATA_PORT) << 8; // 光标高 8 位
+    outb(CRT_ADDR_PORT, CRT_CURSOR_L);
+    pos |= inb(CRT_DATA_PORT);
+
+    outb(CRT_ADDR_PORT, CRT_CURSOR_H);
+    outb(CRT_DATA_PORT, 0);
+    outb(CRT_ADDR_PORT, CRT_CURSOR_L);
+    outb(CRT_DATA_PORT, 123);
+
     return;
 }

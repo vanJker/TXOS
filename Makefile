@@ -12,10 +12,10 @@ KERNEL_ELF := $(TARGET)/kernel.elf
 KERNEL_BIN := $(TARGET)/kernel.bin
 KERNEL_SYM := $(TARGET)/kernel.map
 
-KERNEL_SRCS := $(wildcard $(SRC)/kernel/*.asm)
-KERNEL_OBJS := $(patsubst $(SRC)/kernel/%.asm, $(TARGET)/kernel/%.o, $(KERNEL_SRCS))
-KERNEL_SRCS := $(wildcard $(SRC)/kernel/*.c)
-KERNEL_OBJS += $(patsubst $(SRC)/kernel/%.c, $(TARGET)/kernel/%.o, $(KERNEL_SRCS))
+# ld 的目标文件参数次序必须满足依赖次序，且保证第一条指令在 0x10000 地址处
+KERNEL_OBJS := $(TARGET)/kernel/start.o \
+			   $(TARGET)/kernel/main.o \
+			   $(TARGET)/kernel/io.o \
 
 # gcc 参数
 CFLAGS := -m32			# 生成 32 位机器上的程序
@@ -77,17 +77,17 @@ bochs-debug: $(IMG)
 	bochs-gdb -q -f ./bochs/bochsrc-gdb
 
 QEMU := qemu-system-i386
-QEMU_FLAGS := -m 32M \
+QFLAGS := -m 32M \
 				-boot c \
 				-hda $(IMG)
 
 .PHONY: qemu-run
 qemu-run: $(IMG)
-	$(QEMU) $(QEMU_FLAGS)
+	$(QEMU) $(QFLAGS)
 
 .PHONY: qemu-debug
 qemu-debug: $(IMG)
-	$(QEMU) $(QEMU_FLAGS) -s -S
+	$(QEMU) $(QFLAGS) -s -S
 
 VMDK := $(TARGET)/master.vmdk
 $(VMDK): $(IMG)
