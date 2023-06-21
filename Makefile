@@ -16,7 +16,9 @@ KERNEL_SYM := $(TARGET)/kernel.map
 KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/main.o \
 			   $(TARGET)/kernel/io.o \
-			   $(TARGET)/lib/string.o \
+			   $(TARGET)/kernel/console.o \
+
+LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/%.c))
 
 # gcc 参数
 CFLAGS := -m32			# 生成 32 位机器上的程序
@@ -51,7 +53,7 @@ $(TARGET)/lib/%.o: $(SRC)/lib/%.c
 	$(shell mkdir -p $(dir $@))
 	gcc $(CFLAGS) $(DEBUG_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
-$(KERNEL_ELF): $(KERNEL_OBJS)
+$(KERNEL_ELF): $(KERNEL_OBJS) $(LIB_OBJS)
 	$(shell mkdir -p $(dir $@))
 	ld -m elf_i386 -static $^ -o $@ -Ttext $(KERNEL_ENTRY)
 
