@@ -71,13 +71,13 @@ error:
     call print
     hlt     ; CPU 停机
     jmp $
-    .msg db "Loading Error!", 10, 13, 0
+    .msg db "[ERROR] Loading Error!", 10, 13, 0
 
 loading:
-    db "Loading XOS...", 10, 13, 0 ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
+    db "[INFO] Loaded XOS.", 10, 13, 0 ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
 
 detecting:
-    db "Detecting Memory Success...", 10, 13, 0 ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
+    db "[INFO] Detected Memory.", 10, 13, 0 ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
 
 
 [bits 32]

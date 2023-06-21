@@ -192,10 +192,10 @@ error:
     call print
     hlt     ; CPU 停机
     jmp $
-    .msg db "Booting Error!", 10, 13, 0
+    .msg db "[ERROR] Booting Error!", 10, 13, 0
 
 booting:
-    db "Booting XOS...", 10, 13, 0  ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
+    db "[INFO] Booted XOS.", 10, 13, 0  ; 在 ASCII 编码中，13:\n, 10:\r, 0:\0
 
 ; 填充 0
 times 510 - ($ - $$) db 0
