@@ -18,7 +18,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/io.o \
 			   $(TARGET)/kernel/console.o \
 
-LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/%.c))
+LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 
 # gcc 参数
 CFLAGS := -m32			# 生成 32 位机器上的程序

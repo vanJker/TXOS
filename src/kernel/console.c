@@ -1,5 +1,6 @@
 #include <xos/console.h>
 #include <xos/io.h>
+#include <xos/string.h>
 
 /**
  * console 负责管理 [0xb8000, 0xbc000) 的显示内存区域，记录屏幕位置和光标位置信息
@@ -65,19 +66,128 @@ static void set_cursor_addr(console_t *c) {
     outb(CRT_DATA_PORT, ((cursor >> 1) & 0xff));
 }
 
-// 向 console 当前光标处写入一个字节序列
-void console_write(u8 *buf, u32 count) {
-    // TODO:
+// 向上滚屏
+static void scroll_up(console_t *c) {
+    // 回滚
+    if (c->screen_base + SCR_SIZE + SCR_ROW_SIZE < CGA_MEM_END) {
+        memcpy(CGA_MEM_BASE, c->screen_base, SCR_SIZE);
+        c->cursor_addr -= (c->screen_base - CGA_MEM_BASE);
+        c->screen_base = CGA_MEM_BASE;
+    }
+
+    u16 *ptr = (u16 *)(c->screen_base + SCR_SIZE);
+    // 清空下一行的区域
+    for (size_t i = 0; i < SCR_WIDTH; i++) {
+        *ptr++ = ERASE;
+    }
+    // 移动屏幕和光标
+    c->screen_base += SCR_ROW_SIZE;
+    set_screen_base(c);
+}
+
+// 光标移动到下一行的同一位置
+static void command_lf(console_t *c) {
+    // 超过屏幕需要进行向上滚屏
+    if (c->cursor_y + 1 >= SCR_HEIGHT) {
+        scroll_up(c);
+    }
+    c->cursor_y++;
+    c->cursor_addr += SCR_ROW_SIZE;
+}
+
+// 光标移到行首
+static void command_cr(console_t *c) {
+    c->cursor_addr -= (c->cursor_x << 1);
+    c->cursor_x = 0;
+}
+
+// 光标退格
+static void command_bs(console_t *c) {
+    if (c->cursor_x) {
+        c->cursor_x--;
+        c->cursor_addr -= 2;
+        *(u16 *)c->cursor_addr = ERASE;
+    }
+}
+
+// 删除光标所在位置的文本
+static void command_del(console_t *c) {
+    *(u16 *)c->cursor_addr = ERASE;
+}
+
+// 向 console 当前光标处以 attr 样式写入一个字节序列
+void console_write(char *buf, size_t count, u8 attr) {
+    char ch;
+    char *ptr = (char *)console.cursor_addr;
+
+    while (count--) {
+        ch = *buf++;
+        switch (ch) {
+            case ASCII_NUL:
+                break;
+            case ASCII_ENQ:
+                break;
+            case ASCII_BEL:
+                // TODO:
+                break;
+            case ASCII_BS: 
+                command_bs(&console);
+                break;
+            case ASCII_HT:
+                break; 
+            case ASCII_LF:
+                command_lf(&console);
+                command_cr(&console);
+                break; 
+            case ASCII_VT:
+                break; 
+            case ASCII_FF:
+                command_lf(&console);
+                break; 
+            case ASCII_CR: 
+                command_cr(&console);
+                break;
+            case ASCII_DEL:
+                command_del(&console);
+                break;
+            default:
+                *ptr++ = ch;   // 写入字符
+                *ptr++ = attr; // 写入样式
+
+                console.cursor_addr += 2;
+                console.cursor_x++;
+
+                // 到达行末进行换行
+                if (console.cursor_x >= SCR_WIDTH) {
+                    command_lf(&console);
+                    command_cr(&console);
+                }
+                break;
+        }
+    }
+
+    set_cursor_addr(&console);
 }
 
 // 清空 console
 void console_clear() {
-    // TODO:
+    // 重置屏幕位置
+    console.screen_base = CGA_MEM_BASE;
+    set_screen_base(&console);
+
+    // 重置光标位置
+    console.cursor_addr = CGA_MEM_BASE;
+    console.cursor_x = 0;
+    console.cursor_y = 0;
+    set_cursor_addr(&console);
+
+    // 清空显示内存
+    for (u16 *ptr = (u16 *)CGA_MEM_BASE; ptr < (u16 *)CGA_MEM_END; ptr++) {
+        *ptr = ERASE;
+    }
 }
 
 // 初始化 console
 void console_init() {
-    // console_clear();
-    get_screen_base(&console);
-    get_cursor_addr(&console);
+    console_clear();
 }
