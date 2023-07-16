@@ -13,10 +13,12 @@ KERNEL_BIN := $(TARGET)/kernel.bin
 KERNEL_SYM := $(TARGET)/kernel.map
 
 # ld 的目标文件参数次序必须满足依赖次序，且保证第一条指令在 0x10000 地址处
+# 所以必须要将 start.o 置于第一个参数位置
 KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/main.o \
 			   $(TARGET)/kernel/io.o \
 			   $(TARGET)/kernel/console.o \
+			   $(TARGET)/kernel/printk.o \
 
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 
@@ -64,7 +66,7 @@ $(KERNEL_SYM): $(KERNEL_ELF)
 	nm $< | sort > $@
 
 
-$(IMG): $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN)
+$(IMG): $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM)
 	yes | bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat $@
 	dd if=$(BOOT_BIN) of=$@ bs=512 count=1 conv=notrunc
 	dd if=$(LOADER_BIN) of=$@ bs=512 count=4 seek=2 conv=notrunc

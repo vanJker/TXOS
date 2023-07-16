@@ -3,22 +3,12 @@
 #include <xos/io.h>
 #include <xos/string.h>
 #include <xos/console.h>
-#include <xos/stdarg.h>
+#include <xos/stdio.h>
 
-void test_varargs(int cnt, ...) {
-    va_list args;
-    va_start(args, cnt);
-
-    int arg;
-    while (cnt--) {
-        arg = va_arg(args, int);
-    }
-
-    va_end(args);
-}
+char buf[1024];
 
 void kernel_init() {
     console_init();
-    test_varargs(5, 1, 0x55, 0xaa, 4, 0xffff);
-    return;
+    int len = sprintf(buf, "hello xos %#010x", 1024);
+   return;
 }
