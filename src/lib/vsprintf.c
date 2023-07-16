@@ -100,7 +100,7 @@ static char *number(char *str, unsigned long num, int base, int size, int precis
     // 如果 flags 中没有填零（ZEROPAD）和左对齐（LEFT）标志
     // 则在 str 中首先填放剩余宽度指出的空格数
     if (!(flags & (ZEROPAD | LEFT)))
-        while (size--)
+        while (size-- > 0)
             *str++ = ' ';
     
     // 如果带符号位，则存入符号
