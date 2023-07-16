@@ -5,6 +5,7 @@
 
 #include <xos/stdio.h>
 #include <xos/string.h>
+#include <xos/assert.h>
 
 #define ZEROPAD (1 << 0)    // 填充 0
 #define SIGN    (1 << 1)    // unsigned/signed long
@@ -365,7 +366,9 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
     *str = '\0';
 
     // 返回转换好的字符串长度
-    return str - buf;
+    i = str - buf;
+    assert(i < 1024);
+    return i;
 }
 
 // 结果按格式输出字符串到 buf，返回格式化后字符串的长度
