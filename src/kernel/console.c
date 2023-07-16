@@ -147,7 +147,6 @@ static void command_del(console_t *c) {
 // 向 console 当前光标处以 attr 样式写入一个字节序列
 void console_write(char *buf, size_t count, u8 attr) {
     char ch;
-    char *ptr = (char *)console.cursor_addr;
 
     while (count--) {
         ch = *buf++;
@@ -180,6 +179,7 @@ void console_write(char *buf, size_t count, u8 attr) {
                 command_del(&console);
                 break;
             default:
+                char *ptr = (char *)console.cursor_addr;
                 *ptr++ = ch;   // 写入字符
                 *ptr++ = attr; // 写入样式
 
