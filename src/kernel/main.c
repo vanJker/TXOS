@@ -5,11 +5,16 @@
 #include <xos/console.h>
 #include <xos/printk.h>
 #include <xos/assert.h>
+#include <xos/debug.h>
 
 char buf[1024];
 
 void kernel_init() {
     console_init();
-    panic("Out of Memory");
+
+    BMB;
+
+    DEBUGK("debugk xos!!!\n");
+
     return;
 }

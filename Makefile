@@ -20,6 +20,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/console.o \
 			   $(TARGET)/kernel/printk.o \
 			   $(TARGET)/kernel/assert.o \
+			   $(TARGET)/kernel/debug.o \
 
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 
@@ -77,6 +78,9 @@ $(IMG): $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM)
 .PHONY: clean
 clean:
 	rm -rf $(TARGET)/*
+
+.PHONY: build
+build: $(IMG)
 
 .PHONY: bochs-run
 bochs-run: $(IMG)
