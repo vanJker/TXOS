@@ -21,6 +21,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/printk.o \
 			   $(TARGET)/kernel/assert.o \
 			   $(TARGET)/kernel/debug.o \
+			   $(TARGET)/kernel/gdt.o \
 
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 

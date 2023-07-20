@@ -6,15 +6,11 @@
 #include <xos/printk.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
-
-char buf[1024];
+#include <xos/gdt.h>
 
 void kernel_init() {
     console_init();
-
-    BMB;
-
-    DEBUGK("debugk xos!!!\n");
+    gdt_init();
 
     return;
 }
