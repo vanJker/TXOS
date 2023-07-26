@@ -6,13 +6,15 @@
 #include <xos/printk.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
-#include <xos/gdt.h>
+#include <xos/global.h>
 #include <xos/task.h>
+#include <xos/interrupt.h>
 
 void kernel_init() {
     console_init();
     gdt_init();
-    task_init();
+    // task_init();
+    interrupt_init();
 
     return;
 }

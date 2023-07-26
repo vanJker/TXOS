@@ -3,7 +3,7 @@
 
 void debugk(char *file, int line, const char *fmt, ...);
 
-#define BMB asm volatile("xchgw %bx, %bx") // bochs magic breakpoint
+#define BMB asm volatile("xchgw %bx, %bx") // Bochs Magic Breakpoint
 #define DEBUGK(fmt, args...) debugk(__FILE__, __LINE__, fmt, ##args);
 
 #endif

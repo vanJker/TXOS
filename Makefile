@@ -24,6 +24,8 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/global.o \
 			   $(TARGET)/kernel/task.o \
 			   $(TARGET)/kernel/schedule.o \
+			   $(TARGET)/kernel/interrupt.o \
+			   $(TARGET)/kernel/handler.o \
 
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 
