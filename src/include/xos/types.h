@@ -29,4 +29,11 @@ typedef unsigned long long u64;
 typedef float  f32;
 typedef double f64;
 
+// 描述符表指针
+typedef struct pointer_t /* 48 位 */
+{
+    u16 limit; // size - 1
+    u32 base;
+} __attribute__((packed)) pointer_t;
+
 #endif

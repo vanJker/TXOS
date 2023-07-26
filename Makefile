@@ -21,7 +21,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/printk.o \
 			   $(TARGET)/kernel/assert.o \
 			   $(TARGET)/kernel/debug.o \
-			   $(TARGET)/kernel/gdt.o \
+			   $(TARGET)/kernel/global.o \
 			   $(TARGET)/kernel/task.o \
 			   $(TARGET)/kernel/schedule.o \
 

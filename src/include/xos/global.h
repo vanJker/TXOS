@@ -1,5 +1,5 @@
-#ifndef XOS_GDT_H
-#define XOS_GDT_H
+#ifndef XOS_GLOBAL_H
+#define XOS_GLOBAL_H
 
 #include <xos/types.h>
 
@@ -21,13 +21,6 @@ typedef struct descriptor_t /* 共 8 个字节 */
     u8 granularity : 1; // 1 表示粒度为 4KB，0 表示粒度为 1B
     u8 base_high : 8;   // 基地址 24 ~ 31 位
 } __attribute__((packed)) descriptor_t;
-
-// 全局描述符指针
-typedef struct pointer_t /* 48 位 */
-{
-    u16 limit; // size - 1
-    u32 base;
-} __attribute__((packed)) pointer_t;
 
 // 段选择子
 typedef struct selector_t /* 16 位 */

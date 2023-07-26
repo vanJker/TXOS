@@ -1,4 +1,4 @@
-#include <xos/gdt.h>
+#include <xos/global.h>
 #include <xos/string.h>
 #include <xos/debug.h>
 
