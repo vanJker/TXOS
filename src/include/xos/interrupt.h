@@ -18,6 +18,9 @@ typedef struct gate_t /* 共 8 个字节 */
     u16 offset_high;    // 段内偏移 16 ~ 31 位
 } _packed gate_t;
 
+// 中断处理函数
+typedef void *handler_t;
+
 void interrupt_init();
 
 #endif

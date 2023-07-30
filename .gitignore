@@ -8,6 +8,8 @@
 *.lock
 *.tar.*
 
+.vscode/settings.json
+
 bochs/src
 bochs/pkg
 
