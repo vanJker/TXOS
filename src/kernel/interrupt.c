@@ -63,9 +63,11 @@ void exception_handler(int vector) {
 }
 
 void send_eoi(int vector) {
+    // 如果中断来自主片，只需要向主片发送 EOI
     if (vector >= 0x20 && vector < 0x28) {
         outb(PIC_M_CTRL, PIC_EOI);
     }
+    // 如果中断来自从片，除了向从片发送 EOI 以外，还要再向主片发送 EOI
     if (vector >= 0x28 && vector < 0x30) {
         outb(PIC_M_CTRL, PIC_EOI);
         outb(PIC_S_CTRL, PIC_EOI);
@@ -80,16 +82,19 @@ void default_handler(int vector) {
 
 // 初始化中断控制器
 void pic_init() {
+    // 主片 ICW
     outb(PIC_M_CTRL, 0b00010001); // ICW1: 边沿触发, 级联 8259, 需要ICW4.
     outb(PIC_M_DATA, 0x20);       // ICW2: 起始端口/中断向量号 0x20
     outb(PIC_M_DATA, 0b00000100); // ICW3: IR2接从片.
     outb(PIC_M_DATA, 0b00000001); // ICW4: 8086模式, 正常EOI
 
+    // 从片 ICW
     outb(PIC_S_CTRL, 0b00010001); // ICW1: 边沿触发, 级联 8259, 需要ICW4.
     outb(PIC_S_DATA, 0x28);       // ICW2: 起始端口/中断向量号 0x28
     outb(PIC_S_DATA, 2);          // ICW3: 设置从片连接到主片的 IR2 引脚
     outb(PIC_S_DATA, 0b00000001); // ICW4: 8086模式, 正常EOI
 
+    // 主片/从片 OCW1
     outb(PIC_M_DATA, 0b11111110); // OCW1: 关闭所有中断（时钟中断除外）
     outb(PIC_S_DATA, 0b11111111); // OCW1: 关闭所有中断
 }
