@@ -1,14 +1,26 @@
 #include <xos/interrupt.h>
 #include <xos/debug.h>
 #include <xos/printk.h>
+#include <xos/stdlib.h>
+#include <xos/io.h>
+
+#define LOGK(fmt, args...) DEBUGK(fmt, ##args)
+// #define LOGK(fmt, args...)
 
 #define EXCEPTION_SIZE 0x20 // 异常数量
+#define ENTRY_SIZE     0x30 // 中断入口数量
 
-gate_t idt[IDT_SIZE]; // 中断描述符表
-pointer_t idt_ptr;    // 中断描述符表指针
+#define PIC_M_CTRL 0x20     // 主片的控制端口
+#define PIC_M_DATA 0x21     // 主片的数据端口
+#define PIC_S_CTRL 0xa0     // 从片的控制端口
+#define PIC_S_DATA 0xa1     // 从片的数据端口
+#define PIC_EOI    0x20     // 通知中断控制器中断结束
 
-handler_t handler_table[IDT_SIZE];                    // 中断处理函数表
-extern handler_t handler_entry_table[EXCEPTION_SIZE]; // 中断入口函数表
+gate_t idt[IDT_SIZE];       // 中断描述符表
+pointer_t idt_ptr;          // 中断描述符表指针
+
+handler_t handler_table[IDT_SIZE];                  // 中断处理函数表
+extern handler_t handler_entry_table[ENTRY_SIZE];   // 中断入口函数表
 
 // 中断输出的错误信息表
 static char *messages[] = {
@@ -47,13 +59,45 @@ void exception_handler(int vector) {
     printk("Exception: [0x%02x] %s \n", vector, message);
 
     // 阻塞
-    while (true)
-        ;
+    hang();
 }
 
-void interrupt_init() {
+void send_eoi(int vector) {
+    if (vector >= 0x20 && vector < 0x28) {
+        outb(PIC_M_CTRL, PIC_EOI);
+    }
+    if (vector >= 0x28 && vector < 0x30) {
+        outb(PIC_M_CTRL, PIC_EOI);
+        outb(PIC_S_CTRL, PIC_EOI);
+    }
+}
+
+void default_handler(int vector) {
+    static u32 counter = 0;
+    send_eoi(vector);
+    LOGK("[%d] default interrupt called %d...\n", vector, counter++);
+}
+
+// 初始化中断控制器
+void pic_init() {
+    outb(PIC_M_CTRL, 0b00010001); // ICW1: 边沿触发, 级联 8259, 需要ICW4.
+    outb(PIC_M_DATA, 0x20);       // ICW2: 起始端口号 0x20
+    outb(PIC_M_DATA, 0b00000100); // ICW3: IR2接从片.
+    outb(PIC_M_DATA, 0b00000001); // ICW4: 8086模式, 正常EOI
+
+    outb(PIC_S_CTRL, 0b00010001); // ICW1: 边沿触发, 级联 8259, 需要ICW4.
+    outb(PIC_S_DATA, 0x28);       // ICW2: 起始端口号 0x28
+    outb(PIC_S_DATA, 2);          // ICW3: 设置从片连接到主片的 IR2 引脚
+    outb(PIC_S_DATA, 0b00000001); // ICW4: 8086模式, 正常EOI
+
+    outb(PIC_M_DATA, 0b11111110); // 关闭所有中断
+    outb(PIC_S_DATA, 0b11111111); // 关闭所有中断
+}
+
+// 初始化中断描述符表，以及中断处理函数表
+void idt_init() {
     // 初始化中断描述符表
-    for (size_t i = 0; i < EXCEPTION_SIZE; i++) {
+    for (size_t i = 0; i < ENTRY_SIZE; i++) {
         gate_t *gate = &idt[i];
         handler_t handler = handler_entry_table[i];
 
@@ -66,12 +110,27 @@ void interrupt_init() {
         gate->DPL = 0;           // 内核态权级
         gate->present = 1;       // 有效位
     }
+
+    // 初始化异常处理函数表
+    for (size_t i = 0; i < EXCEPTION_SIZE; i++) {
+        handler_table[i] = exception_handler;
+    }
+    // 初始化外中断处理函数表
+    for (size_t i = EXCEPTION_SIZE; i < ENTRY_SIZE; i++) {
+        handler_table[i] = default_handler;
+    }
+
+    // 加载中断描述符表指针
     idt_ptr.base = (u32)idt;
     idt_ptr.limit = sizeof(idt) - 1;
     asm volatile("lidt idt_ptr");
+}
 
-    // 初始化异常处理函数表
-    for (size_t i = 0; i < 0x20; i++) {
-        handler_table[i] = exception_handler;
-    }
+// 中断初始化
+void interrupt_init() {
+    pic_init();
+    idt_init();
+
+    // 打开中断
+    asm volatile("sti");
 }

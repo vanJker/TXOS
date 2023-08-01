@@ -24,6 +24,7 @@ interrupt_entry:
     add esp, 8
     iret
 
+; 异常
 INTERRUPT_ENTRY 0x00, 0 ; divide by zero
 INTERRUPT_ENTRY 0x01, 0 ; debug
 INTERRUPT_ENTRY 0x02, 0 ; non maskable interrupt
@@ -64,6 +65,26 @@ INTERRUPT_ENTRY 0x1d, 0 ; reserved
 INTERRUPT_ENTRY 0x1e, 0 ; reserved
 INTERRUPT_ENTRY 0x1f, 0 ; reserved
 
+; 外中断
+INTERRUPT_ENTRY 0x20, 0 ; clock 时钟中断
+INTERRUPT_ENTRY 0x21, 0
+INTERRUPT_ENTRY 0x22, 0
+INTERRUPT_ENTRY 0x23, 0
+
+INTERRUPT_ENTRY 0x24, 0
+INTERRUPT_ENTRY 0x25, 0
+INTERRUPT_ENTRY 0x26, 0
+INTERRUPT_ENTRY 0x27, 0
+
+INTERRUPT_ENTRY 0x28, 0
+INTERRUPT_ENTRY 0x29, 0
+INTERRUPT_ENTRY 0x2a, 0
+INTERRUPT_ENTRY 0x2b, 0
+
+INTERRUPT_ENTRY 0x2c, 0
+INTERRUPT_ENTRY 0x2d, 0
+INTERRUPT_ENTRY 0x2e, 0
+INTERRUPT_ENTRY 0x2f, 0
 
 section .data
 
@@ -102,3 +123,19 @@ handler_entry_table:
     dd interrupt_entry_0x1d
     dd interrupt_entry_0x1e
     dd interrupt_entry_0x1f
+    dd interrupt_entry_0x20
+    dd interrupt_entry_0x21
+    dd interrupt_entry_0x22
+    dd interrupt_entry_0x23
+    dd interrupt_entry_0x24
+    dd interrupt_entry_0x25
+    dd interrupt_entry_0x26
+    dd interrupt_entry_0x27
+    dd interrupt_entry_0x28
+    dd interrupt_entry_0x29
+    dd interrupt_entry_0x2a
+    dd interrupt_entry_0x2b
+    dd interrupt_entry_0x2c
+    dd interrupt_entry_0x2d
+    dd interrupt_entry_0x2e
+    dd interrupt_entry_0x2f
