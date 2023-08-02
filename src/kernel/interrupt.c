@@ -3,6 +3,7 @@
 #include <xos/printk.h>
 #include <xos/stdlib.h>
 #include <xos/io.h>
+#include <xos/task.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 // #define LOGK(fmt, args...)
@@ -48,7 +49,12 @@ static char *messages[] = {
     [0x15] "#CP Control Protection Exception",
 };
 
-void exception_handler(int vector) {
+void exception_handler(
+    int vector,
+    u32 edi, u32 esi, u32 ebp, u32 esp,
+    u32 ebx, u32 edx, u32 ecx, u32 eax,
+    u32 gs, u32 fs, u32 es, u32 ds,
+    u32 vector0, u32 error, u32 eip, u32 cs, u32 eflags) {
     char *message = NULL;
     if (vector < 0x16) {
         message = messages[vector];
@@ -56,7 +62,14 @@ void exception_handler(int vector) {
         message = messages[0x0f]; // 输出reversed 信息
     }
 
-    printk("Exception: [0x%02x] %s \n", vector, message);
+    printk("\n");
+    printk("EXCEPTION : %s \n",    message);
+    printk("   VECTOR : 0x%02X\n", vector);
+    printk("    ERROR : 0x%08X\n", error);
+    printk("   EFLAGS : 0x%08X\n", eflags);
+    printk("       CS : 0x%02X\n", cs);
+    printk("      EIP : 0x%08X\n", eip);
+    printk("      ESP : 0x%08X\n", esp);
 
     // 阻塞
     hang();
@@ -75,9 +88,8 @@ void send_eoi(int vector) {
 }
 
 void default_handler(int vector) {
-    static u32 counter = 0;
     send_eoi(vector);
-    LOGK("[%d] default interrupt called %d...\n", vector, counter++);
+    schedule();
 }
 
 // 初始化中断控制器

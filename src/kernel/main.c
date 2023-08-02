@@ -14,14 +14,8 @@
 void kernel_init() {
     console_init();
     gdt_init();
-    // task_init();
     interrupt_init();
-
-    u32 counter = 0;
-    while (true) {
-        DEBUGK("looping in kernel init %d...\n", counter++);
-        delay(100000000);
-    }
+    // task_init();
 
     return;
 }

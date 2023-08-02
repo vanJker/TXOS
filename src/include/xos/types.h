@@ -9,7 +9,11 @@
 #define true  1
 #define false 0
 
-#define _packed __attribute__((packed)) // gcc 用于定义紧凑的结构体
+// gcc 用于定义紧凑的结构体
+#define _packed __attribute__((packed))
+
+// gcc 用于省略函数的栈帧
+#define _ofp __attribute__((optimize("omit-frame-pointer")))
 
 typedef unsigned int size_t;
 

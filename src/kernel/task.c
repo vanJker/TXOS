@@ -22,17 +22,19 @@ void schedule() {
     task_switch(next);
 }
 
-u32 thread_a() {
+u32 _ofp thread_a() {
+    asm volatile("sti"); // 打开中断
+
     while (true) {
         printk("A");
-        schedule();
     }
 }
 
-u32 thread_b() {
+u32 _ofp thread_b() {
+    asm volatile("sti"); // 打开中断
+
     while (true) {
         printk("B");
-        schedule();
     }
 }
 
