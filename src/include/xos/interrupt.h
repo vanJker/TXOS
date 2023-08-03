@@ -3,7 +3,30 @@
 
 #include <xos/types.h>
 
-#define IDT_SIZE 256    // 一共 256 个中断描述符
+#define IDT_SIZE 256        // 一共 256 个中断描述符
+
+#define IRQ_MASTER_NR 0x20  // 主片起始向量号
+#define IRQ_SLAVE_NR  0x28  // 从片起始向量号
+
+// 外中断 IRQ(interrupt request)
+enum irq_t {
+    IRQ_CLOCK,      // 时钟
+    IRQ_KEYBOARD,   // 键盘
+    IRQ_CASCADE,    // 8259 从片控制器
+    IRQ_SERIAL_2,   // 串口 2
+    IRQ_SERIAL_1,   // 串口 2
+    IRQ_PARALLEL_2, // 并口 2
+    IRQ_FLOPPY,     // 软盘控制器
+    IRQ_PARALLEL_1, // 并口 1
+    IRQ_RTC,        // 实时时钟
+    IRQ_REDIRECT,   // 重定向 IRQ2
+    IRQ_10,
+    IRQ_11,
+    IRQ_MOUSE,      // 鼠标
+    IRQ_MATH,       // 协处理器 x87
+    IRQ_HARDDISK_1, // ATA 硬盘第一通道
+    IRQ_HARDDISK_2, // ATA 硬盘第二通道
+};
 
 // 中断描述符
 typedef struct gate_t /* 共 8 个字节 */
@@ -22,5 +45,14 @@ typedef struct gate_t /* 共 8 个字节 */
 typedef void *handler_t;
 
 void interrupt_init();
+
+// 发送中断结束信号
+void send_eoi(int vector);
+
+// 设置 IRQ 对应的中断处理函数
+void set_interrupt_handler(u32 irq, handler_t handler);
+
+// 设置 IRQ 对应的中断屏蔽字
+void set_interrupt_mask(u32 irq, bool enable);
 
 #endif

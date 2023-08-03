@@ -10,10 +10,10 @@ _start:
     xchg bx, bx ; Bochs Magic Breakpoint
 
     ; 0x80 系统调用，会触发一般性保护异常
-    int 0x80
+    ; int 0x80
 
     ; 除零异常
-    mov bx, 0
-    div bx
+    ; mov bx, 0
+    ; div bx
 
     jmp $ ; 阻塞

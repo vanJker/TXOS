@@ -3,7 +3,7 @@
 #include <xos/printk.h>
 #include <xos/stdlib.h>
 #include <xos/io.h>
-#include <xos/task.h>
+#include <xos/assert.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 // #define LOGK(fmt, args...)
@@ -88,8 +88,31 @@ void send_eoi(int vector) {
 }
 
 void default_handler(int vector) {
+    static u32 counter = 0;
     send_eoi(vector);
-    schedule();
+    LOGK("[%x] default interrupt called %d...\n", vector, counter++);
+}
+
+void set_interrupt_handler(u32 irq, handler_t handler) {
+    assert(irq >= 0 && irq < 16);
+    handler_table[IRQ_MASTER_NR + irq] = handler;
+}
+
+void set_interrupt_mask(u32 irq, bool enable) {
+    assert(irq >= 0 && irq < 16);
+    u16 port;
+
+    // 计算端口和屏蔽字
+    if (irq < 8) {  // 位于主片
+        port = PIC_M_DATA;
+    } else {        // 位于从片
+        port = PIC_S_DATA;
+        irq -= 8;   // 消除偏移量
+    }
+
+    // 开启/屏蔽指定 IRQ
+    if (enable) outb(port, inb(port) & ~(1 << irq));
+    else        outb(port, inb(port) | (1 << irq));
 }
 
 // 初始化中断控制器
@@ -107,7 +130,7 @@ void pic_init() {
     outb(PIC_S_DATA, 0b00000001); // ICW4: 8086模式, 正常EOI
 
     // 主片/从片 OCW1
-    outb(PIC_M_DATA, 0b11111110); // OCW1: 关闭所有中断（时钟中断除外）
+    outb(PIC_M_DATA, 0b11111111); // OCW1: 关闭所有中断
     outb(PIC_S_DATA, 0b11111111); // OCW1: 关闭所有中断
 }
 
@@ -133,7 +156,7 @@ void idt_init() {
         handler_table[i] = exception_handler;
     }
     // 初始化外中断处理函数表
-    for (size_t i = EXCEPTION_SIZE; i < ENTRY_SIZE; i++) {
+    for (size_t i = 0x20; i < ENTRY_SIZE; i++) {
         handler_table[i] = default_handler;
     }
 
