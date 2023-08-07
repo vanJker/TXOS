@@ -99,7 +99,9 @@ bochs-debug: $(IMG)
 QEMU := qemu-system-i386
 QFLAGS := -m 32M \
 			-boot c \
-			-hda $(IMG) \
+			-drive file=$(IMG),if=ide,index=0,media=disk,format=raw \
+			-audiodev pa,id=hda \
+			-machine pcspk-audiodev=hda \
 
 .PHONY: qemu-run
 qemu-run: $(IMG)

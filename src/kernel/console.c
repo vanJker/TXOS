@@ -31,6 +31,8 @@
 #define ASCII_CR  0x0d // '\r'
 #define ASCII_DEL 0x7f
 
+extern void start_beep();
+
 /**
  * console 负责管理 [0xb8000, 0xbc000) 的显示内存区域，记录屏幕位置和光标位置信息
  */
@@ -155,10 +157,10 @@ void console_write(char *buf, size_t count, u8 attr) {
                 break;
             case ASCII_ENQ:
                 break;
-            case ASCII_BEL:
-                // TODO:
+            case ASCII_BEL: // 蜂鸣 beep
+                start_beep();
                 break;
-            case ASCII_BS: 
+            case ASCII_BS:
                 command_bs(&console);
                 break;
             case ASCII_HT:
