@@ -170,7 +170,4 @@ void idt_init() {
 void interrupt_init() {
     pic_init();
     idt_init();
-
-    // 打开中断
-    asm volatile("sti");
 }

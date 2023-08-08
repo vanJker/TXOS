@@ -3,16 +3,16 @@ extern void console_init();
 extern void gdt_init();
 extern void interrupt_init();
 extern void clock_init();
-extern void hang();
+extern void time_init();
 
 void kernel_init() {
     console_init();
     gdt_init();
     interrupt_init();
-    clock_init();
+    // clock_init();
+    time_init();
 
-    printk("\a");
-    hang();
+    // asm volatile("sti"); // 打开中断
 
     return;
 }

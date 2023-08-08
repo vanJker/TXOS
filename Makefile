@@ -27,6 +27,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/interrupt.o \
 			   $(TARGET)/kernel/handler.o \
 			   $(TARGET)/kernel/clock.o \
+			   $(TARGET)/kernel/time.o \
 
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 
@@ -102,6 +103,7 @@ QFLAGS := -m 32M \
 			-drive file=$(IMG),if=ide,index=0,media=disk,format=raw \
 			-audiodev pa,id=hda \
 			-machine pcspk-audiodev=hda \
+			-rtc base=localtime \
 
 .PHONY: qemu-run
 qemu-run: $(IMG)
