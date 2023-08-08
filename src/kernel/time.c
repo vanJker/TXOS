@@ -3,9 +3,6 @@
 #include <xos/debug.h>
 #include <xos/stdlib.h>
 
-#define LOGK(fmt, args...) DEBUGK(fmt, ##args)
-// #define LOGK
-
 #define CMOS_ADDR_PORT 0x70 // CMOS 索引端口
 #define CMOS_DATA_PORT 0x71 // CMOS 数据端口
 

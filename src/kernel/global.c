@@ -6,7 +6,7 @@ descriptor_t gdt[GDT_SIZE]; // 内核全局描述符表
 pointer_t gdt_ptr;          // 内核全局描述符表指针
 
 void gdt_init() {
-    DEBUGK("init GDT!!!\n");
+    LOGK("init GDT!!!\n");
 
     asm volatile("sgdt gdt_ptr");
 

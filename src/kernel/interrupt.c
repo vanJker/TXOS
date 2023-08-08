@@ -5,9 +5,6 @@
 #include <xos/io.h>
 #include <xos/assert.h>
 
-#define LOGK(fmt, args...) DEBUGK(fmt, ##args)
-// #define LOGK(fmt, args...)
-
 #define EXCEPTION_SIZE 0x20 // 异常数量
 #define ENTRY_SIZE     0x30 // 中断入口数量
 
