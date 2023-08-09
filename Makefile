@@ -28,6 +28,8 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/handler.o \
 			   $(TARGET)/kernel/clock.o \
 			   $(TARGET)/kernel/time.o \
+			   $(TARGET)/kernel/rtc.o \
+			   $(TARGET)/kernel/cmos.o \
 
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 

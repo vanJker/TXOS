@@ -99,6 +99,8 @@ u8 bcd_to_bin(u8 value);
 u8 bin_to_bcd(u8 value);
 ```
 
+BCD 码和二进制编码的相互转换：
+
 ```c
 /* kernel/stdlib.c */
 
@@ -109,9 +111,11 @@ u8 bcd_to_bin(u8 value) {
 u8 bin_to_bcd(u8 value) {
     // 需要保证这个函数接受的 value 在十进制下至多为 2 位数
     assert(value < 100);
-    return (value % 10) + (value / 10) << 4;
+    return (value % 10) + ((value / 10) << 4);
 }
 ```
+
+**注意：在 `(value / 10) << 4` 处必须再用一个括号括起来，保证运算的优先级（C语言中位运算的优先级低于算术运算，大坑）。**
 
 ### 4.2 声明时间相关类型和函数
 

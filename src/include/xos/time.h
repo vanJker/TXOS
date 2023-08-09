@@ -27,4 +27,7 @@ time_t mktime(time_val *time);
 // 系统初始化时，调用该函数打印当前时间
 void time_init();
 
+// 初始化实时时钟中断
+void rtc_init();
+
 #endif

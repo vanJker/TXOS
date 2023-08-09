@@ -2,22 +2,7 @@
 #include <xos/io.h>
 #include <xos/debug.h>
 #include <xos/stdlib.h>
-
-#define CMOS_ADDR_PORT 0x70 // CMOS 索引端口
-#define CMOS_DATA_PORT 0x71 // CMOS 数据端口
-
-// 下面是 CMOS 消息的寄存器索引
-#define CMOS_SECOND  0X00   // (0 ~ 59)
-#define CMOS_MINUTE  0x02   // (0 ~ 59)
-#define CMOS_HOUR    0x04   // (0 ~ 23)
-#define CMOS_WEEKDAY 0x06   // (1 ~ 7) 星期天=1，星期六=7
-#define CMOS_DAY     0x07   // (1 ~ 31)
-#define CMOS_MONTH   0x08   // (1 ~ 12)
-#define CMOS_YEAR    0x09   // (0 ~ 99)
-#define CMOS_CENTURY 0x32   // 可能不存在
-
-// 屏蔽 NMI 中断
-#define CMOS_NMI 0x80
+#include <xos/cmos.h>
 
 #define MINUTE 60           // 每分钟的秒数
 #define HOUR   (60 * MINUTE)// 每小时的秒数
@@ -40,12 +25,6 @@ static int month[13] = {
     (31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31),
     (31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30)
 };
-
-// 获取 CMOS 的 addr 索引处的数据
-u8 cmos_read(u8 addr) {
-    outb(CMOS_ADDR_PORT, CMOS_NMI | addr);
-    return inb(CMOS_DATA_PORT);
-}
 
 // 判断是否是闰年
 static bool is_leap(i32 year) {
@@ -162,5 +141,5 @@ void time_init() {
             time.tm_hour,
             time.tm_min,
             time.tm_sec);
-    LOGK("startup seconds from 1970: %d\n", startup_time);
+    LOGK("startup seconds from 1970: %ds\n", startup_time);
 }
