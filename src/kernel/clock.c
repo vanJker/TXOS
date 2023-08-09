@@ -44,11 +44,8 @@ void clock_handler(int vector) {
     assert(vector == 0x20);
     send_eoi(vector);
 
-    // 定时蜂鸣，用于测试
-    if (jiffies % 200 == 0) start_beep();
-
     jiffies++;
-    DEBUGK("clock jiffies %d ...\n", jiffies);
+    // DEBUGK("clock jiffies %d ...\n", jiffies);
 
     // 每个时间片结束前都需要检查当前蜂鸣是否完成（蜂鸣持续 5 个时间片）
     stop_beep();

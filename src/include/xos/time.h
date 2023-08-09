@@ -3,6 +3,8 @@
 
 #include <xos/types.h>
 
+/* time.c */
+
 typedef u32 time_t;
 
 typedef struct time_val {
@@ -27,7 +29,25 @@ time_t mktime(time_val *time);
 // 系统初始化时，调用该函数打印当前时间
 void time_init();
 
+
+/* rtc.c */
+
+// 设置 RTC 闹钟值为当前时间值 + secs 秒
+void set_alarm(u32 secs);
+
 // 初始化实时时钟中断
 void rtc_init();
+
+
+/* clock.c */
+
+// 开始蜂鸣
+void start_beep();
+
+// 初始化 PIT
+void pit_init();
+
+// 初始化时钟
+void clock_init();
 
 #endif
