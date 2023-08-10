@@ -52,7 +52,7 @@ void set_alarm(u32 secs) {
 // 实时时钟中断处理函数
 void rtc_handler(int vector) {
     // 实时时钟中断向量号
-    assert(vector == 0x28);
+    assert(vector == IRQ_RTC + IRQ_MASTER_NR);
 
     // 向中断控制器发送中断处理完成的信号
     send_eoi(vector);

@@ -41,7 +41,10 @@ void stop_beep() {
 
 // 时钟中断处理函数
 void clock_handler(int vector) {
-    assert(vector == 0x20);
+    // 时钟中断向量号
+    assert(vector == IRQ_CLOCK + IRQ_MASTER_NR);
+
+    // 向中断控制器发送中断处理完成的信号
     send_eoi(vector);
 
     jiffies++;
