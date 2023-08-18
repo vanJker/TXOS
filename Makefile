@@ -30,6 +30,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/time.o \
 			   $(TARGET)/kernel/rtc.o \
 			   $(TARGET)/kernel/cmos.o \
+			   $(TARGET)/kernel/memory.o \
 
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 
@@ -78,9 +79,15 @@ $(KERNEL_SYM): $(KERNEL_ELF)
 
 
 $(IMG): $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM)
+# 创建一个 16M 的硬盘镜像
 	yes | bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat $@
+# 将 boot.bin 写入主引导扇区
 	dd if=$(BOOT_BIN) of=$@ bs=512 count=1 conv=notrunc
+# 将 loader.bin 写入硬盘
 	dd if=$(LOADER_BIN) of=$@ bs=512 count=4 seek=2 conv=notrunc
+# 测试 system.bin 小于 100k，否则需要修改下面的 count
+	test -n "$$(find $(TARGET)/kernel.bin -size -100k)"
+# 将 kernel.bin 写入硬盘
 	dd if=$(KERNEL_BIN) of=$@ bs=512 count=200 seek=10 conv=notrunc
 
 

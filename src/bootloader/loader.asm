@@ -25,7 +25,7 @@ detect_memory:
 
     jc error        ; 如果 CF 位为 1，则调用出错
     add di, cx      ; 将缓存指针指向下一个结构体地址处
-    inc word [ards_cnt] ; 更新记录的 ards 结构体数量
+    inc dword [ards_cnt] ; 更新记录的 ards 结构体数量
     cmp ebx, 0      ; ebx 为 0 表示当前为最后一个 ards 结构体
     jnz .next
     
@@ -99,6 +99,9 @@ protected_mode:
     mov bl,  200         ; 读取的扇区数量
 
     call read_disk
+
+    mov eax, 0x20230614  ; 内核魔数
+    mov ebx, ards_cnt    ; 地址描述符地址
 
     jmp 0x10000 ; 进入内核
 
@@ -209,5 +212,5 @@ gdt_data:
 gdt_end:
 
 ards_cnt:
-    dw 0
+    dd 0
 ards_buf:
