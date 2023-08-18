@@ -4,11 +4,13 @@
 
 VS Code 的调试主要由 `launch.json` 和 `tasks.json` 两个配置文件负责。这两个文件可以理解成高级版的 `Makefile`，因为其本质仍然是执行命令。
 
-`launch.json` 表示调试的配置，包括调试文件位置 ("program")，调试工具位置 ("miDebuggerPath) 等等。
+`launch.json` 表示调试的配置，包括调试文件位置（`"program"`），调试工具位置（`"miDebuggerPath"`）等等。
 
-其中的预先任务 ("preLaunchTask") 表示进行调试前需要进行的任务，一般为编译。
+其中的预先任务（`"preLaunchTask"`）表示进行调试前需要进行的任务，一般为编译。
 
-这个预先任务 ("preLaunchTask“) 和 `tasks.json` 中的配置的 ("label") 相对应，表示应预先执行哪个任务。
+这个预先任务（`"preLaunchTask“`）和 `tasks.json` 中的配置的（`"label"`）相对应，表示应预先执行哪个任务；如果没有指定预先任务，那么就不会执行任何预先操作。
+
+调试文件位置（`"program"`）尽量和 `Makefile` 文件保持在同一个目录下，这样可以在 VS Code 工作台为空时，仍能正确的触发调试。
 
 `launch.json` 配置文件：
 
@@ -41,7 +43,7 @@ VS Code 的调试主要由 `launch.json` 和 `tasks.json` 两个配置文件负�
 }
 ```
 
-`tasks.json` 配置文件
+`tasks.json` 配置文件：
 
 ```json
 {

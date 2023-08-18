@@ -2,7 +2,6 @@
 #include <xos/io.h>
 #include <xos/debug.h>
 #include <xos/stdlib.h>
-#include <xos/cmos.h>
 
 #define MINUTE 60           // 每分钟的秒数
 #define HOUR   (60 * MINUTE)// 每小时的秒数
