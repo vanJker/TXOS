@@ -3,6 +3,7 @@
 #include <xos/interrupt.h>
 #include <xos/debug.h>
 #include <xos/stdlib.h>
+#include <xos/io.h>
 
 u8 cmos_read(u8 addr) {
     outb(CMOS_ADDR_PORT, CMOS_NMI | addr);

@@ -29,7 +29,6 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/clock.o \
 			   $(TARGET)/kernel/time.o \
 			   $(TARGET)/kernel/rtc.o \
-			   $(TARGET)/kernel/cmos.o \
 			   $(TARGET)/kernel/memory.o \
 
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
