@@ -24,6 +24,8 @@ typedef struct memory_manager_t {
     u32 start_page_idx;     // 可分配物理内存的起始页索引
     u8 *memory_map;         // 物理内存数组
     u32 memory_map_pages;   // 物理内存数组占用的页数
+    u32 kernel_page_dir;    // 内核页目录所在物理地址
+    u32 kernel_page_table;  // 内核第一个页表所在的物理地址
 } memory_manager_t;
 
 static memory_manager_t mm;
@@ -137,13 +139,73 @@ static void free_page(u32 addr) {
     LOGK("Free page 0x%p\n", addr);
 }
 
+u32 get_cr3() {
+    // 根据函数调用约定，将 cr3 的值复制到 eax 作为返回值
+    asm volatile("movl %cr3, %eax");
+}
+
+void set_cr3(u32 pde) {
+    ASSERT_PAGE_ADDR(pde);
+    // 先将 pde 复制到 eax，再将 eax 的值复制到 cr3
+    asm volatile("movl %%eax, %%cr3"::"a"(pde));
+}
+
+// 将 cr0 的最高位 PG 置为 1，启用分页机制
+static void enable_page() {
+    asm volatile(
+        "movl %cr0, %eax\n"
+        "orl $0x80000000, %eax\n"
+        "movl %eax, %cr0\n"
+    );
+}
+
+// 初始化页表项，设置为指定的页索引 | U | W | P
+static void page_entry_init(page_entry_t *entry, u32 index) {
+    *(u32 *)entry = 0;
+    entry->present = 1;
+    entry->write = 1;
+    entry->user = 1;
+    entry->index = index;
+}
+
+// 初始化内核地址空间映射（恒等映射）
+void kernel_map() {
+    // 设置内核页目录和页表所在物理地址
+    mm.kernel_page_dir = 0x200000;
+    mm.kernel_page_table = mm.kernel_page_dir + PAGE_SIZE;
+
+    page_entry_t *pde = (page_entry_t *)mm.kernel_page_dir;
+    memset(pde, 0, PAGE_SIZE); // 清空内核页目录
+
+    // 将页目录的第一项设置为内核页表
+    page_entry_init(&pde[0], PAGE_IDX(mm.kernel_page_table));
+
+    page_entry_t *pte = (page_entry_t *)mm.kernel_page_table;
+    memset(pte, 0, PAGE_SIZE); // 清空内核页表
+
+    // 恒等映射前 1024 个页，即前 4MB 内存空间
+    for (size_t i = 0; i < 1024; i++) {
+        page_entry_init(&pte[i], i);
+        mm.memory_map[i] = 1; // 设置物理内存数组，该页被占用
+    }
+
+    BMB;
+
+    // 设置 cr3 寄存器
+    set_cr3((u32)pde);
+
+    BMB;
+
+    // 启用分页机制
+    enable_page();
+    
+    BMB;
+}
+
 void memory_test() {
-    size_t cnt = 10;
-    u32 pages[cnt];
-    for (size_t i = 0; i < cnt; i++) {
-        pages[i] = alloc_page();
-    }
-    for (size_t i = 0; i < cnt; i++) {
-        free_page(pages[i]);
-    }
+    BMB;
+
+    // 访问未被映射的 20M 地址处
+    char *ptr = (char *)(0x100000 * 20);
+    ptr[0] = 'a';
 }

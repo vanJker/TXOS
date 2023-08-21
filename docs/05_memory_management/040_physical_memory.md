@@ -18,10 +18,10 @@
 
 ```c
 // 分配一页物理内存
-static u32 alloc_page()
+static u32 alloc_page();
 
 // 释放一页物理内存
-static void free_page(u32 addr)
+static void free_page(u32 addr);
 ```
 
 ## 2. 代码分析

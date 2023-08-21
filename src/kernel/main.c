@@ -8,13 +8,15 @@ extern void rtc_init();
 extern void memory_init();
 extern void set_alarm(unsigned int);
 extern void memory_test();
+extern void kernel_map();
 
 void kernel_init() {
     console_init();
     gdt_init();
     memory_init();
+    kernel_map();
     interrupt_init();
-    clock_init();
+    // clock_init();
     // time_init();
     // rtc_init();
     // set_alarm(2);

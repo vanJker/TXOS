@@ -99,11 +99,11 @@ build: $(IMG)
 
 .PHONY: bochs-run
 bochs-run: $(IMG)
-	bochs -q -f ./bochs/bochsrc
+	bochs -q -f ./bochs/bochsrc -unlock
 
 .PHONY: bochs-debug
 bochs-debug: $(IMG)
-	bochs-gdb -q -f ./bochs/bochsrc-gdb
+	bochs-gdb -q -f ./bochs/bochsrc-gdb -unlock
 
 QEMU := qemu-system-i386
 QFLAGS := -m 32M \
