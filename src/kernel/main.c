@@ -7,16 +7,19 @@ extern void time_init();
 extern void rtc_init();
 extern void memory_init();
 extern void set_alarm(unsigned int);
+extern void memory_test();
 
 void kernel_init() {
     console_init();
     gdt_init();
+    memory_init();
     interrupt_init();
-    // clock_init();
+    clock_init();
     // time_init();
     // rtc_init();
     // set_alarm(2);
-    memory_init();
+
+    memory_test();
 
     // asm volatile("sti"); // 打开中断
 

@@ -20,3 +20,7 @@ u8 bin_to_bcd(u8 value) {
     assert(value < 100);
     return (value % 10) + ((value / 10) << 4);
 }
+
+u32 div_round_up(u32 a, u32 b) {
+    return (a + b - 1) / b;
+}
