@@ -89,7 +89,7 @@ int memcmp(const void *lhs, const void *rhs, size_t count) {
 void *memset(void *dest, int ch, size_t count) {
     u8 *ptr = (u8 *)dest;
     while (count--) {
-        *ptr = ch;
+        *ptr++ = ch;
     }
     return dest;
 }
