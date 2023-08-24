@@ -15,6 +15,15 @@
 // 判断 addr 是否为页的起始地址
 #define ASSERT_PAGE_ADDR(addr) ((addr & 0xfff) == 0)
 
+// 获取 addr 的页目录索引
+#define PDE_IDX(addr) (((u32)addr >> 22) & 0x3ff)
+
+// 获取 addr 的页表索引
+#define PTE_IDX(addr) (((u32)addr >> 12) & 0x3ff)
+
+// 索引类型（页索引 / 页目录向索引 / 页表项索引）
+typedef u32 idx_t;
+
 // 页表/页目录项
 typedef struct page_entry_t {
     u8 present : 1;  // 0 不在内存，1 在内存中
@@ -29,6 +38,13 @@ typedef struct page_entry_t {
     u8 ignored : 3;  // 保留位（该安排的都安排了，送给操作系统吧）
     u32 index : 20;  // 页索引
 } _packed page_entry_t;
+
+// 一页中页表项的数量
+#define PAGE_ENTRY_SIZE (PAGE_SIZE / sizeof(page_entry_t))
+
+void memory_init();
+
+void kernel_map_init();
 
 // 获取 cr3 寄存器的值
 u32 get_cr3();

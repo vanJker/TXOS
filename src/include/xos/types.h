@@ -15,6 +15,12 @@
 // gcc 用于省略函数的栈帧
 #define _ofp __attribute__((optimize("omit-frame-pointer")))
 
+// gcc 用于定义内联函数
+#define _inline __attribute__((always_inline)) inline
+
+// 获取非空数组的元素个数
+#define NELEM(a) (sizeof(a) / sizeof(a[0]))
+
 typedef unsigned int size_t;
 
 // 有符号数
