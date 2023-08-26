@@ -5,9 +5,11 @@
 #define NULL ((void *)0) // 空指针
 #define EOS '\0' // 字符串结束符
 
+#ifndef __cplusplus
 #define bool  _Bool // C99 定义的关键字是 _Bool
 #define true  1
 #define false 0
+#endif
 
 // gcc 用于定义紧凑的结构体
 #define _packed __attribute__((packed))
