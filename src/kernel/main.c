@@ -9,6 +9,7 @@ extern void memory_init();
 extern void set_alarm(unsigned int);
 extern void memory_test();
 extern void kernel_map_init();
+extern void bitmap_test();
 
 void kernel_init() {
     console_init();
@@ -21,7 +22,7 @@ void kernel_init() {
     // rtc_init();
     // set_alarm(2);
 
-    memory_test();
+    bitmap_test();
 
     // asm volatile("sti"); // 打开中断
 

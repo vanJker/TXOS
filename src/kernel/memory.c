@@ -229,8 +229,6 @@ void kernel_map_init() {
 
     // 启用分页机制
     enable_page();
-    
-    BMB;
 }
 
 // 获取内核页目录
@@ -249,41 +247,4 @@ static page_entry_t *get_pte(u32 vaddr) {
 static void flush_tlb(u32 vaddr) {
     asm volatile("invlpg (%0)" ::"r"(vaddr)
                  : "memory");
-}
-
-void memory_test() {
-    BMB;
-
-    // 将 20M，即 0x140_0000 地址映射到 64M 0x400_0000 处
-
-    // 我们还需要一个物理页来存放额外的页表
-
-    u32 vaddr = 0x4000000; // 线性地址几乎可以是任意的（在 4G 内即可）
-    u32 paddr = 0x1400000; // 物理地址必须要确定存在（必须在 32M 内）
-    u32 paddr2 = 0x1500000; // 物理地址必须要确定存在（必须在 32M 内）
-    u32 table = 0x900000;  // 页表也必须是物理地址
-
-    page_entry_t *kpage_dir = get_pde();
-    page_entry_t *pde = &kpage_dir[PDE_IDX(vaddr)];
-    page_entry_init(pde, PAGE_IDX(table));
-
-    page_entry_t *kpage_table = get_pte(vaddr);
-    page_entry_t *pte = &kpage_table[PTE_IDX(vaddr)];
-    page_entry_init(pte, PAGE_IDX(paddr));
-
-    BMB;
-
-    char *ptr = (char *)vaddr;
-    ptr[0] = 'a';
-
-    BMB;
-
-    page_entry_init(&pte[PTE_IDX(vaddr)], PAGE_IDX(paddr2));
-    flush_tlb(vaddr);
-
-    BMB;
-
-    ptr[2] = 'b';
-
-    BMB;
 }

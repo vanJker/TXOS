@@ -5,6 +5,7 @@
 #define NULL ((void *)0) // 空指针
 #define EOS '\0' // 字符串结束符
 
+// __cplusplus 宏是判定当前打开语言是否为 c++
 #ifndef __cplusplus
 #define bool  _Bool // C99 定义的关键字是 _Bool
 #define true  1
