@@ -98,19 +98,3 @@ size_t bitmap_insert_nbits(bitmap_t *map, u32 n) {
     }
     return start;
 }
-
-void bitmap_test() {
-    const size_t LEN = 2;
-    u8 buf[LEN];
-    bitmap_t map;
-
-    bitmap_init(&map, buf, LEN, 0);
-    for (size_t i = 0; i < 33; i++) {
-        size_t k = bitmap_insert_nbits(&map, 1);
-        if (k == EOF) {
-            LOGK("TEST FINISH\n");
-            break;
-        }
-        LOGK("%d\n", k);
-    }
-}

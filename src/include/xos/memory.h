@@ -52,4 +52,10 @@ u32 get_cr3();
 // 设置 cr3 寄存器，参数是页目录的地址
 void set_cr3(u32 pde);
 
+// 分配 count 个连续的内核页
+u32 kalloc(u32 count);
+
+// 释放 count 个连续的内核页
+void kfree(u32 vaddr, u32 count);
+
 #endif

@@ -4,6 +4,7 @@
 #include <xos/debug.h>
 #include <xos/stdlib.h>
 #include <xos/string.h>
+#include <xos/bitmap.h>
 
 #define ZONE_VALID    1 // ards 可用内存区域
 #define ZONE_RESERVED 2 // ards 不可用内存区域
@@ -35,6 +36,7 @@ typedef struct kmm_t {
     u32 *kernel_page_table; // 内核页表所在的物理地址数组（内核页表连续存储）
     size_t kpgtbl_len;      // 内核页表地址数组的长度
     u32 kernel_space_size;  // 内核地址空间大小
+    bitmap_t kernel_vmap;   // 内核虚拟内存空间位图
 } kmm_t;
 // 内核页表索引
 static u32 KERNEL_PAGE_TABLE[] = {
@@ -195,6 +197,7 @@ static void page_entry_init(page_entry_t *entry, u32 index) {
     entry->index = index;
 }
 
+static void kernel_vmap_init();
 // 初始化内核地址空间映射（恒等映射）
 void kernel_map_init() {
     page_entry_t *kpage_dir = (page_entry_t *)(kmm.kernel_page_dir);
@@ -229,6 +232,16 @@ void kernel_map_init() {
 
     // 启用分页机制
     enable_page();
+
+    // 初始化内核虚拟内存空间位图
+    kernel_vmap_init();
+}
+
+// 初始化内核虚拟内存空间位图
+static void kernel_vmap_init() {
+    u8 *bits = (u8 *)0x4000;
+    size_t size = div_round_up((PAGE_IDX(kmm.kernel_space_size) - mm.start_page_idx), 8);
+    bitmap_init(&kmm.kernel_vmap, bits, size, mm.start_page_idx);
 }
 
 // 获取内核页目录
@@ -247,4 +260,61 @@ static page_entry_t *get_pte(u32 vaddr) {
 static void flush_tlb(u32 vaddr) {
     asm volatile("invlpg (%0)" ::"r"(vaddr)
                  : "memory");
+}
+
+// 从位图中扫描 count 个连续的页
+static u32 scan_pages(bitmap_t *map, u32 count) {
+    assert(count > 0);
+    i32 idx = bitmap_insert_nbits(map, count);
+
+    if (idx == EOF) {
+        panic("Scan page fail!!!");
+    }
+
+    u32 addr = PAGE_ADDR(idx);
+    LOGK("Scan page 0x%p count %d\n", addr, count);
+    return addr;
+}
+
+// 与 scan_page 相对，重置相应的页
+static void reset_pages(bitmap_t *map, u32 addr, u32 count) {
+    ASSERT_PAGE_ADDR(addr);
+    assert(count > 0);
+    u32 idx = PAGE_IDX(addr);
+
+    for (size_t i = 0; i < count; i++) {
+        assert(bitmap_contains(map, idx + i));
+        bitmap_remove(map, idx + i);
+    }
+}
+
+// 分配 count 个连续的内核页
+u32 kalloc(u32 count) {
+    assert(count > 0);
+    u32 vaddr = scan_pages(&kmm.kernel_vmap, count);
+    LOGK("ALLOC kernel pages 0x%p count %d\n", vaddr, count);
+    return vaddr;
+}
+
+// 释放 count 个连续的内核页
+void kfree(u32 vaddr, u32 count) {
+    ASSERT_PAGE_ADDR(vaddr);
+    assert(count > 0);
+    reset_pages(&kmm.kernel_vmap, vaddr, count);
+    LOGK("FREE kernel pages 0x%p count %d\n", vaddr, count);
+}
+
+void memory_test() {
+    u32 *kpages = (u32 *)(0x200000);
+    u32 count = PAGE_IDX(kmm.kernel_space_size) - mm.start_page_idx;
+
+    // 分配内核页
+    for (size_t i = 0; i < count; i++) {
+        kpages[i] = kalloc(1);
+    }
+
+    // 释放内核页
+    for (size_t i = 0; i < count; i++) {
+        kfree(kpages[i], 1);
+    }
 }
