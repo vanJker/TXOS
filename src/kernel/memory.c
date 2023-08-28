@@ -303,18 +303,3 @@ void kfree(u32 vaddr, u32 count) {
     reset_pages(&kmm.kernel_vmap, vaddr, count);
     LOGK("FREE kernel pages 0x%p count %d\n", vaddr, count);
 }
-
-void memory_test() {
-    u32 *kpages = (u32 *)(0x200000);
-    u32 count = PAGE_IDX(kmm.kernel_space_size) - mm.start_page_idx;
-
-    // 分配内核页
-    for (size_t i = 0; i < count; i++) {
-        kpages[i] = kalloc(1);
-    }
-
-    // 释放内核页
-    for (size_t i = 0; i < count; i++) {
-        kfree(kpages[i], 1);
-    }
-}

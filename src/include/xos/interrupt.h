@@ -55,4 +55,19 @@ void set_interrupt_handler(u32 irq, handler_t handler);
 // 设置 IRQ 对应的中断屏蔽字
 void set_interrupt_mask(u32 irq, bool enable);
 
+// 获取当前的外中断响应状态，即获取 IF 位
+u32 get_irq_state();
+
+// 关闭外中断响应，即清除 IF 位
+void irq_disable();
+
+// 打开外中断响应，即设置 IF 位
+void irq_enable();
+
+// 保存当前的外中断状态，并关闭外中断
+void irq_save();
+
+// 将外中断状态恢复为先前的外中断状态
+void irq_restore();
+
 #endif

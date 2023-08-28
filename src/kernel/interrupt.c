@@ -112,6 +112,47 @@ void set_interrupt_mask(u32 irq, bool enable) {
     else        outb(port, inb(port) | (1 << irq));
 }
 
+// 获取当前的外中断响应状态，即获取 IF 位
+u32 get_irq_state() {
+    asm volatile(
+        "pushfl\n"        // 将当前的 eflags 压入栈中
+        "popl %eax\n"     // 将压入的 eflags 弹出到 eax
+        "shrl $9, %eax\n" // 将 eax 右移 9 位，得到 IF 位
+        "andl $1, %eax\n" // 只需要 IF 位
+    );
+}
+
+// 设置 IF 位
+static _inline void set_irq_state(u32 state) {
+    if (state) asm volatile("sti\n");
+    else       asm volatile("cli\n"); 
+}
+
+// 关闭外中断响应，即清除 IF 位
+void irq_disable() {
+    set_irq_state(false);
+}
+
+// 打开外中断响应，即设置 IF 位
+void irq_enable() {
+    set_irq_state(true);
+}
+
+// 先前的外中断响应状态
+static u32 pre_irq_state = 0;
+
+// 保存当前的外中断状态，并关闭外中断
+void irq_save() {
+    pre_irq_state = get_irq_state();
+    asm volatile("cli\n"); // 关闭中断
+}
+
+// 将外中断状态恢复为先前的外中断状态
+void irq_restore() {
+    set_irq_state(pre_irq_state);
+    pre_irq_state = 0;
+}
+
 // 初始化中断控制器
 void pic_init() {
     // 主片 ICW
