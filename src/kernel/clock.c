@@ -2,6 +2,7 @@
 #include <xos/interrupt.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
+#include <xos/task.h>
 
 // 对应计数器相关的端口
 #define PIT_CHAN0_PORT 0x40
@@ -47,11 +48,24 @@ void clock_handler(int vector) {
     // 向中断控制器发送中断处理完成的信号
     send_eoi(vector);
 
+    // 每个时间片结束前都需要检查当前蜂鸣是否完成（蜂鸣持续 5 个时间片）
+    stop_beep();
+
+    // 更新时间片计数
     jiffies++;
     // DEBUGK("clock jiffies %d ...\n", jiffies);
 
-    // 每个时间片结束前都需要检查当前蜂鸣是否完成（蜂鸣持续 5 个时间片）
-    stop_beep();
+    /***** 任务管理 *****/
+    task_t *current = current_task();
+    assert(current->magic == XOS_MAGIC); // 检测栈溢出
+
+    // 更新 PCB 中与时间片相关的数据
+    current->jiffies = jiffies;
+    current->ticks--;
+    if (current->ticks == 0) {
+        current->ticks = current->priority;
+        schedule(); // 任务调度
+    }
 }
 
 void pit_init() {

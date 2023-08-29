@@ -3,6 +3,7 @@
 
 #include <xos/types.h>
 #include <xos/bitmap.h>
+#include <xos/xos.h>
 
 #define KERNEL_TASK 0 // 内核任务
 #define USER_TASK   1 // 用户任务
@@ -50,7 +51,7 @@ typedef struct task_frame_t {
 
 // 初始化任务管理
 void task_init();
-// 当前任务 TCB
+// 当前任务
 task_t *current_task();
 // 任务调度
 void schedule();

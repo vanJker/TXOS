@@ -4,7 +4,6 @@
 #include <xos/assert.h>
 #include <xos/memory.h>
 #include <xos/interrupt.h>
-#include <xos/xos.h>
 #include <xos/string.h>
 
 extern void task_switch(task_t *next);
@@ -48,6 +47,7 @@ static task_t *task_search(task_state_t state) {
     return result;
 }
 
+// 当前任务
 task_t *current_task() {
     // (sp - 4) 保证获取到正确的 TCB
     asm volatile(
@@ -57,6 +57,7 @@ task_t *current_task() {
     );
 }
 
+// 任务调度
 void schedule() {
     task_t *current = current_task();       // 获取当前任务
     task_t *next = task_search(TASK_READY); // 查找一个就绪任务
@@ -140,6 +141,7 @@ u32 thread_c() {
     }
 }
 
+// 初始化任务管理
 void task_init() {
     task_setup();
 

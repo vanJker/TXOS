@@ -26,7 +26,7 @@
 
 ```c
 void task_init();       // 初始化任务管理
-task_t *current_task(); // 当前任务 TCB
+task_t *current_task(); // 当前任务
 void schedule();        // 任务调度
 ```
 
@@ -237,7 +237,7 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
 
 `setup` 线程就是从开机自此的内核线程，即从 `boot` -> `loader` -> `kernel` 运行至今的线程。我们需要配置一下该线程的 `PCB`，使得它能参与到任务调度当中。
 
-我们配置了 `setup` 线程的 `MAGIC`，使得它能检测栈溢出。同时配置 `setup` 线程的剩余时间片为 1，这样使得下一次发生时钟中断时，会调用 `schedule()` 进行任务调度。
+我们配置了 `setup` 线程的 `MAGIC`，使得它能检测栈溢出。同时配置 `setup` 线程的剩余时间片为 1，这样使得下一次发生时钟中断时，会调用 `schedule()` 进行任务调度。并且初始化了任务队列。
 
 ```c
 // 配置开机运行至今的 setup 任务，使得其能进行任务调度
@@ -281,3 +281,84 @@ void task_init() {
     task_create((target_t)thread_c, "c", 5, KERNEL_TASK);
 }
 ```
+
+### 4.9 时钟中断
+
+在时钟中断处理中，加入任务管理相关的逻辑。
+
+每次时钟中断都更新当前任务 `PCB` 中与时间片相关的数据（上次运行时的时间片 `jiffies` 和 剩余时间片 `ticks`）。
+
+当任务的剩余时间片归零时，重置它的剩余时间片，并进行任务调度，调度到下一个任务执行。
+
+> **关于剩余时间片，目前的设计是，剩余时间片的初始值等于任务的优先级，所以可以使用优先级来重置剩余时间片。**
+
+```c
+// 时钟中断处理函数
+void clock_handler(int vector) {
+    // 时钟中断向量号
+    assert(vector == IRQ_CLOCK + IRQ_MASTER_NR);
+
+    // 向中断控制器发送中断处理完成的信号
+    send_eoi(vector);
+
+    // 每个时间片结束前都需要检查当前蜂鸣是否完成（蜂鸣持续 5 个时间片）
+    stop_beep();
+    
+    // 更新时间片计数
+    jiffies++;
+    // DEBUGK("clock jiffies %d ...\n", jiffies);
+
+    /***** 任务管理 *****/
+    task_t *current = current_task();
+    assert(current->magic == XOS_MAGIC); // 检测栈溢出
+
+    // 更新 PCB 中与时间片相关的数据
+    current->jiffies = jiffies;
+    current->ticks--;
+    if (current->ticks == 0) {
+        current->ticks = current->priority;
+        schedule(); // 任务调度
+    }
+}
+```
+
+## 5. 功能测试
+
+在 `kernel/main.c` 搭建测试框架：
+
+```c
+void kernel_init() {
+    console_init();
+    gdt_init();
+    memory_init();
+    kernel_map_init();
+    interrupt_init();
+    clock_init();
+    task_init();
+
+    irq_enable(); // 打开外中断响应
+
+    hang();
+    return;
+}
+```
+
+配合之前在 任务管理初始化 `task_init()` 创建的 3 个线程，可以进行测试。
+
+预期为，交替打印连续的 `A`、`B` 或 `C`。
+
+---
+
+使用调试
+
+- 观察任务创建 `task_create()` 的流程
+- 观察任务调度 `schedule()` 的流程
+- 观察配置 `setup` 线程 `task_setup()` 的流程
+
+> 在观察 `task_create()` 流程时，可以观察到枚举的特性，使得 `PCB` 结构体在未初始化时，成员 `state` 为 `TASK_INIT`，即 0（结构体成员默认为 0）。
+
+## 6. FAQ
+
+> **测试时出现，屏幕除了打印字母序列外，还打印一些奇怪的颜色，或者打印布局很奇怪。**
+
+这是因为 `prink()` 的写入显示内存缓冲区没有加锁，导致的数据竞争，这个问题我们会在后续的锁机制那里解决。
