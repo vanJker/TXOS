@@ -139,18 +139,22 @@ void irq_enable() {
 }
 
 // 先前的外中断响应状态
-static u32 pre_irq_state = 0;
+#define IRQ_STORE_LEN 32
+static u32 pre_irq_states[IRQ_STORE_LEN];
+static size_t irq_store_index = 0;
 
 // 保存当前的外中断状态，并关闭外中断
 void irq_save() {
-    pre_irq_state = get_irq_state();
+    assert(irq_store_index < IRQ_STORE_LEN);
+    pre_irq_states[irq_store_index++] = get_irq_state();
     asm volatile("cli\n"); // 关闭中断
 }
 
 // 将外中断状态恢复为先前的外中断状态
 void irq_restore() {
+    assert(irq_store_index > 0);
+    u32 pre_irq_state = pre_irq_states[--irq_store_index];
     set_irq_state(pre_irq_state);
-    pre_irq_state = 0;
 }
 
 // 初始化中断控制器
