@@ -1,6 +1,6 @@
 # 046 创建内核线程
 
-本节内容是以 [<028 任务上下文>](../04_interrupt_and_timer/028_task_context.md) 和 [<034 中断上下文>](../04_interrupt_and_timer/034_interrupt_context.md) 为基础展开的，请自行查阅。
+本节内容是以 [<028 任务上下文>][028_task_context] 和 [<034 中断上下文>][034_interrupt_context] 为基础展开的，请自行查阅。
 
 ## 1. 进程控制块
 
@@ -237,7 +237,7 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
 
 `setup` 线程就是从开机自此的内核线程，即从 `boot` -> `loader` -> `kernel` 运行至今的线程。我们需要配置一下该线程的 `PCB`，使得它能参与到任务调度当中。
 
-我们配置了 `setup` 线程的 `MAGIC`，使得它能检测栈溢出。同时配置 `setup` 线程的剩余时间片为 1，这样使得下一次发生时钟中断时，会调用 `schedule()` 进行任务调度。并且初始化了任务队列。
+我们配置了 `setup` 线程的 `MAGIC`，使得它能检测栈溢出。同时配置 `setup` 线程的剩余时间片为 1，这样使得下一次发生时钟中断时，会调用 `schedule()` 进行任务调度。并且初始化了任务队列，使得可以创建任务加入任务队列。
 
 ```c
 // 配置开机运行至今的 setup 任务，使得其能进行任务调度
@@ -322,6 +322,34 @@ void clock_handler(int vector) {
 }
 ```
 
+### 4.10 内核页目录和虚拟内存位图
+
+在 `kernel/memory.c` 中通过内核空间管理器 `kmm`，导出内核的页目录，以及内核虚拟内存位图。
+
+```c
+// 内核页目录的物理地址
+u32 get_kernel_page_dir() {
+    return kmm.kernel_page_dir;
+}
+
+// 内核虚拟内存位图
+bitmap_t *get_kernel_vmap() {
+    return &kmm.kernel_vmap;
+}
+```
+
+在 `kernel/task.c` 创建内核线程时，补充页目录和虚拟内存位图的逻辑。
+
+```c
+// 创建一个默认的任务 TCB
+static task_t *task_create(target_t target, const char *name, u32 priority, u32 uid) {
+    ...    
+    task->page_dir = get_kernel_page_dir();
+    task->vmap = get_kernel_vmap();
+    ...
+}
+```
+
 ## 5. 功能测试
 
 在 `kernel/main.c` 搭建测试框架：
@@ -362,3 +390,8 @@ void kernel_init() {
 > **测试时出现，屏幕除了打印字母序列外，还打印一些奇怪的颜色，或者打印布局很奇怪。**
 
 这是因为 `prink()` 的写入显示内存缓冲区没有加锁，导致的数据竞争，这个问题我们会在后续的锁机制那里解决。
+
+
+
+[028_task_context]: ../04_interrupt_and_timer/028_task_context.md
+[034_interrupt_context]: ../04_interrupt_and_timer/034_interrupt_context.md

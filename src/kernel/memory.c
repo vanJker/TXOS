@@ -303,3 +303,13 @@ void kfree(u32 vaddr, u32 count) {
     reset_pages(&kmm.kernel_vmap, vaddr, count);
     LOGK("FREE kernel pages 0x%p count %d\n", vaddr, count);
 }
+
+// 内核页目录的物理地址
+u32 get_kernel_page_dir() {
+    return kmm.kernel_page_dir;
+}
+
+// 内核虚拟内存位图
+bitmap_t *get_kernel_vmap() {
+    return &kmm.kernel_vmap;
+}

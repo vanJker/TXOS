@@ -100,8 +100,8 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
     task->ticks = task->priority; // 默认剩余时间 = 优先级
     task->jiffies = 0;
     task->uid = uid;
-    task->page_dir = NULL;  // TODO:
-    task->vmap = NULL;      // TODO:
+    task->page_dir = get_kernel_page_dir();
+    task->vmap = get_kernel_vmap();
     task->magic = XOS_MAGIC;
 
     return task;

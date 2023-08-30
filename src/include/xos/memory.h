@@ -2,6 +2,7 @@
 #define XOS_MEMORY_H
 
 #include <xos/types.h>
+#include <xos/bitmap.h>
 
 #define PAGE_SIZE   0x1000 // 页大小为 4K
 #define MEMORY_ALLOC_BASE 0x100000 // 32 位可用内存起始地址为 1M
@@ -57,5 +58,12 @@ u32 kalloc(u32 count);
 
 // 释放 count 个连续的内核页
 void kfree(u32 vaddr, u32 count);
+
+// 内核页目录的物理地址
+u32 get_kernel_page_dir();
+
+// 内核虚拟内存位图
+bitmap_t *get_kernel_vmap();
+
 
 #endif
