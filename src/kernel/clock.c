@@ -63,7 +63,6 @@ void clock_handler(int vector) {
     current->jiffies = jiffies;
     current->ticks--;
     if (current->ticks == 0) {
-        current->ticks = current->priority;
         schedule(); // 任务调度
     }
 }

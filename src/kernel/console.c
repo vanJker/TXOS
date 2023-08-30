@@ -1,6 +1,7 @@
 #include <xos/console.h>
 #include <xos/io.h>
 #include <xos/string.h>
+#include <xos/interrupt.h>
 
 #define CRT_ADDR_PORT 0x3d4  // CRT(6845)索引端口
 #define CRT_DATA_PORT 0x3d5  // CRT(6845)数据端口
@@ -148,6 +149,8 @@ static void command_del(console_t *c) {
 
 // 向 console 当前光标处以 attr 样式写入一个字节序列
 void console_write(char *buf, size_t count, u8 attr) {
+    irq_save(); // 禁止外中断响应
+
     char ch;
 
     while (count--) {
@@ -198,6 +201,8 @@ void console_write(char *buf, size_t count, u8 attr) {
     }
 
     set_cursor_addr(&console);
+
+    irq_restore(); // 恢复外中断响应状态
 }
 
 // 清空 console

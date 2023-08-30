@@ -69,6 +69,10 @@ void schedule() {
     if (current->state == TASK_RUNNING) {
         current->state = TASK_READY;
     }
+    // 重置当前任务的剩余时间片，为下一次调度准备
+    if (current->ticks == 0) {
+        current->ticks = current->priority;
+    }
 
     next->state = TASK_RUNNING;
     if (next == current) { // 如果下一个任务还是当前任务，则无需进行上下文切换

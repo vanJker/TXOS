@@ -20,7 +20,16 @@
 
 ![](./images/task_queue.drawio.svg)
 
-## 4. 核心代码
+## 4. ROP
+
+ROP - Return Oreiented Programming 面向返回编程
+
+- `ret` 函数返回
+- `iret` 中断结束返回到用户态
+
+可通过调试跟踪 `task_switch` 以及 `interrupt_entry` 来理解 ROP 的思想。
+
+## 5. 核心代码
 
 > 代码位于 `include/xos/task.h`
 
@@ -30,9 +39,9 @@ task_t *current_task(); // 当前任务
 void schedule();        // 任务调度
 ```
 
-## 4. 代码分析
+## 6. 代码分析
 
-### 4.1 进程控制块
+### 6.1 进程控制块
 
 > 代码位于 `include/xos/task.h`
 
@@ -83,7 +92,7 @@ typedef enum task_state_t {
 #define USER_TASK   1 // 用户任务#define KERNEL_TASK 0
 ```
 
-### 4.2 任务队列
+### 6.2 任务队列
 
 > 代码位于 `kernel/task.c`
 
@@ -143,7 +152,7 @@ static task_t *task_search(task_state_t state) {
 }
 ```
 
-### 4.3 当前任务
+### 6.3 当前任务
 
 通过栈指针 `sp` 获取当前任务：
 
@@ -162,17 +171,21 @@ task_t *current_task() {
 
 ![](./images/pcb_stack.drawio.svg)
 
-### 4.4 栈溢出
+### 6.4 栈溢出
 
 任务控制块中有一个数据为 `MAGIC`，它是用于检测栈溢出的。参照上图，当栈的数据覆写了 `MAGIC` 时，即可判定栈溢出。
 
 当然，如果栈覆写的数据与 `MAGIC` 相同，这就无法检测了。但是这个概率极小，因为我们使用 **内核魔数** 作为 `MAGIC`。
 
-### 4.5 任务调度
+### 6.5 任务调度
 
 通过任务队列进行任务调度。每次调度时，都在任务队列中寻找已经就绪的任务，并切换到该任务的上下文执行。
 
 > **本节的任务调度也是基于 时钟中断 的 抢占式调度。**
+>
+> **关于剩余时间片，目前的设计是，剩余时间片的初始值等于任务的优先级，所以可以使用优先级来重置剩余时间片。**
+
+因为任务也可能会因为其它原因而进行调度，如睡眠、等待之类的，所以我们在任务调度时，根据调度原因对当前任务做一些配置（设置状态，设置剩余时间片等）。
 
 ```c
 void schedule() {
@@ -186,6 +199,10 @@ void schedule() {
     if (current->state == TASK_RUNNING) {
         current->state = TASK_READY;
     }
+    // 重置当前任务的剩余时间片，为下一次调度准备
+    if (current->ticks == 0) {
+        current->ticks = current->priority;
+    }
 
     next->state = TASK_RUNNING;
     if (next == current) { // 如果下一个任务还是当前任务，则无需进行上下文切换
@@ -196,7 +213,7 @@ void schedule() {
 }
 ```
 
-### 4.6 创建任务
+### 6.6 创建任务
 
 创建一个任务，初始化该任务的 `PCB` 以及栈中保存的初始化上下文，返回该任务的 `PCB`。
 
@@ -233,7 +250,7 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
 }
 ```
 
-### 4.7 内核线程 setup
+### 6.7 内核线程 setup
 
 `setup` 线程就是从开机自此的内核线程，即从 `boot` -> `loader` -> `kernel` 运行至今的线程。我们需要配置一下该线程的 `PCB`，使得它能参与到任务调度当中。
 
@@ -251,7 +268,7 @@ static void task_setup() {
 }
 ```
 
-### 4.8 任务管理初始化
+### 6.8 任务管理初始化
 
 创建 3 个线程，用于测试任务调度。其逻辑均为打开外中断响应，打印一些字符。
 
@@ -282,15 +299,13 @@ void task_init() {
 }
 ```
 
-### 4.9 时钟中断
+### 6.9 时钟中断
 
 在时钟中断处理中，加入任务管理相关的逻辑。
 
 每次时钟中断都更新当前任务 `PCB` 中与时间片相关的数据（上次运行时的时间片 `jiffies` 和 剩余时间片 `ticks`）。
 
 当任务的剩余时间片归零时，重置它的剩余时间片，并进行任务调度，调度到下一个任务执行。
-
-> **关于剩余时间片，目前的设计是，剩余时间片的初始值等于任务的优先级，所以可以使用优先级来重置剩余时间片。**
 
 ```c
 // 时钟中断处理函数
@@ -316,13 +331,12 @@ void clock_handler(int vector) {
     current->jiffies = jiffies;
     current->ticks--;
     if (current->ticks == 0) {
-        current->ticks = current->priority;
         schedule(); // 任务调度
     }
 }
 ```
 
-### 4.10 内核页目录和虚拟内存位图
+### 6.10 内核页目录和虚拟内存位图
 
 在 `kernel/memory.c` 中通过内核空间管理器 `kmm`，导出内核的页目录，以及内核虚拟内存位图。
 
@@ -350,7 +364,7 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
 }
 ```
 
-## 5. 功能测试
+## 7. 功能测试
 
 在 `kernel/main.c` 搭建测试框架：
 
@@ -383,13 +397,31 @@ void kernel_init() {
 - 观察任务调度 `schedule()` 的流程
 - 观察配置 `setup` 线程 `task_setup()` 的流程
 
-> 在观察 `task_create()` 流程时，可以观察到枚举的特性，使得 `PCB` 结构体在未初始化时，成员 `state` 为 `TASK_INIT`，即 0（结构体成员默认为 0）。
+> 在观察 `task_create()` 流程时，可以观察到枚举的特性，使得 `PCB` 结构体在未初始化时，成员 `state` 为 `TASK_INIT`，即 0（结构体成员默认为 0）。在 `task_create()` 调用结束前，使用 bochs 查看内存分布，确保内存分布与我们预期一致。
 
-## 6. FAQ
+## 8. FAQ
 
 > **测试时出现，屏幕除了打印字母序列外，还打印一些奇怪的颜色，或者打印布局很奇怪。**
 
-这是因为 `prink()` 的写入显示内存缓冲区没有加锁，导致的数据竞争，这个问题我们会在后续的锁机制那里解决。
+这是因为 `console_write()` 的写入显示内存缓冲区没有加锁，导致的数据竞争，这个问题我们会在后续的锁机制那里解决。
+
+除了锁机制之外，由于我们设计的是单核的操作系统，所以可以通过关闭外中断响应，来实现临界区加锁的效果。（这个方法过于暴力了 doge）
+
+```c
+void console_write(char *buf, size_t count, u8 attr) {
+    irq_save(); // 禁止外中断响应
+    ...
+    irq_restore(); // 恢复外中断响应状态
+}
+```
+
+![](../images/pic.png)
+
+![](../images/pic2.png)
+
+经过观察，确实解决了缓冲区数据竞争问题。
+
+> 思考一下，为什么共享内存的多核系统（SMP），无法通过关闭外中断响应来实现临界区加锁？
 
 
 
