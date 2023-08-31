@@ -19,6 +19,7 @@ pointer_t idt_ptr;          // 中断描述符表指针
 
 handler_t handler_table[IDT_SIZE];                  // 中断处理函数表
 extern handler_t handler_entry_table[ENTRY_SIZE];   // 中断入口函数表
+extern void syscall_entry();                        // 系统调用入口
 
 // 中断输出的错误信息表
 static char *messages[] = {
@@ -197,10 +198,22 @@ void idt_init() {
     for (size_t i = 0; i < EXCEPTION_SIZE; i++) {
         handler_table[i] = exception_handler;
     }
+
     // 初始化外中断处理函数表
     for (size_t i = 0x20; i < ENTRY_SIZE; i++) {
         handler_table[i] = default_handler;
     }
+
+    // 初始化系统调用
+    gate_t *gate = &idt[SYSCALL_VECTOR];
+    gate->offset_low = (u32)syscall_entry & 0xffff;
+    gate->offset_high = ((u32)syscall_entry >> 16) & 0xffff;
+    gate->selector = 1 << 3; // 1 号段为代码段
+    gate->reserved = 0;      // 保留不用
+    gate->type = 0b1110;     // 中断门
+    gate->segment = 0;       // 系统段
+    gate->DPL = 3;           // 用户态权级
+    gate->present = 1;       // 有效位
 
     // 加载中断描述符表指针
     idt_ptr.base = (u32)idt;

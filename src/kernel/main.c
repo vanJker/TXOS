@@ -10,6 +10,7 @@ extern void rtc_init();
 extern void memory_init();
 extern void kernel_map_init();
 extern void task_init();
+extern void syscall_init();
 
 void kernel_init() {
     console_init();
@@ -21,9 +22,10 @@ void kernel_init() {
     // time_init();
     // rtc_init();
     task_init();
+    syscall_init();
 
-    irq_enable(); // 打开外中断响应
+    // irq_enable(); // 打开外中断响应
 
-    hang();
+    // hang();
     return;
 }

@@ -4,6 +4,7 @@
 #include <xos/types.h>
 
 #define IDT_SIZE 256        // 一共 256 个中断描述符
+#define SYSCALL_VECTOR 0x80 // 系统调用的中断向量号
 
 #define IRQ_MASTER_NR 0x20  // 主片起始向量号
 #define IRQ_SLAVE_NR  0x28  // 从片起始向量号

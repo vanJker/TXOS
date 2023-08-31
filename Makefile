@@ -30,6 +30,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/time.o \
 			   $(TARGET)/kernel/rtc.o \
 			   $(TARGET)/kernel/memory.o \
+			   $(TARGET)/kernel/syscall.o \
 
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 

@@ -11,6 +11,12 @@ _start:
 
     call kernel_init
 
+    xchg bx, bx ; BMB
+    
+    ; 0 号系统调用
+    mov eax, 0
+    int 0x80
+
     jmp $ ; 阻塞
 
 

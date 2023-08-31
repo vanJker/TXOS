@@ -33,6 +33,7 @@ interrupt_entry:
     ; 调用中断处理函数，handler_table 中存储了中断处理函数的指针
     call [handler_table + eax * 4]
 
+interrupt_exit:
     ; 对应先前的 push eax，调用结束后恢复栈
     add esp, 4
 
@@ -101,7 +102,7 @@ INTERRUPT_ENTRY 0x25, 0
 INTERRUPT_ENTRY 0x26, 0
 INTERRUPT_ENTRY 0x27, 0
 
-INTERRUPT_ENTRY 0x28, 0 ; RTC 中断
+INTERRUPT_ENTRY 0x28, 0 ; RTC 实时中断
 INTERRUPT_ENTRY 0x29, 0
 INTERRUPT_ENTRY 0x2a, 0
 INTERRUPT_ENTRY 0x2b, 0
@@ -164,3 +165,50 @@ handler_entry_table:
     dd interrupt_entry_0x2d
     dd interrupt_entry_0x2e
     dd interrupt_entry_0x2f
+
+section .text
+
+extern syscall_check
+extern syscall_table
+
+global syscall_entry
+syscall_entry:
+    xchg bx, bx ; BMB
+
+    ; 验证系统调用号
+    push eax
+    call syscall_check
+    add esp, 4 ; 函数调用结束后恢复栈
+
+    ; 压入魔数和系统调用号，使得栈结构与 interrupt_entry_%1 相同
+    push 0x20230830
+    push 0x80
+
+    ; 保存上文寄存器信息
+    push ds
+    push es
+    push fs
+    push gs
+    pusha
+
+    ; 压入中断向量，保证栈结构符合 interrupt_exit 要求
+    push 0x80
+    
+    xchg bx, bx ; BMB
+    
+    ; 压入系统调用的参数
+    push edx ; 第三个参数
+    push ecx ; 第二个参数
+    push ebx ; 第一个参数
+
+    ; 调用系统调用对应的处理函数
+    call [syscall_table + eax * 4]
+
+    xchg bx, bx ; BMB
+    add esp, 3 * 4 ; 系统调用处理结束恢复栈
+
+    ; 修改栈中的 eax 寄存器值，设置系统调用的返回值
+    mov dword [esp + 8 * 4], eax
+
+    ; 跳转到中断返回
+    jmp interrupt_exit
