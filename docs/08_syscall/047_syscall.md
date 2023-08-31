@@ -31,7 +31,46 @@ mov edx, 第三个参数
 int 0x80
 ```
 
-## 2. 调用流程
+## 2. 使用演示
+
+为了使读者对 **系统调用的约定和使用** 有一个直观的了解，我们实现了一个 demo，代码位于 `tests/test_syscall.asm` 处。
+
+```x86asm
+[bits 32]
+
+section .text
+global main
+main:
+    ; write(stdout, message, len)
+    mov eax, 4 ; write
+    mov ebx, 1 ; stdout
+    mov ecx, message ; buffer
+    mov edx, message_end - message ; len
+    int 0x80
+
+    ; exit(status)
+    mov eax, 1 ; exit
+    mov ebx, 0 ; status
+    int 0x80
+
+section .data
+message:
+    db "hello world!!!", 10, 13, 0 ; \n, \r, \0
+message_end:
+```
+
+这个例子演示了两个系统调用的使用：`write` 和 `exit`。其中 `write` 和 `exit` 的系统调用号分别为 4 和 1。
+
+使用 `nasm` 调试选项对该文件进行调试跟踪。预期为：
+
+- `write(1, message, len)` 的效果为在屏幕（即标准输出）打印 `hello world!!!` 并换行。
+- `exit(0)` 的效果为以状态 0 结束进程，即成功结束进程。
+
+也可以通过生成的 `test_syscall.out` 目标文件来测试，其效果一样：在屏幕 / 标准输出打印 `hello, world!!!`，换行，成功退出。
+
+## 3. 调用流程
+
+本节不在赘述中断的原理，相关说明请参考 [<04 中断与时钟>][04_Interrupt_and_Clock] 目录下的相关文档。
 
 由于系统调用也是通过 **中断门** 实现的，所以我们可以复用之前中断处理流程的一些逻辑。下面是本节设计的系统调用流程，与之前的中断处理流程的对比示意图。
 
@@ -43,9 +82,9 @@ int 0x80
 
 ![](../04_interrupt_and_timer/images/interrupt_context.drawio.svg)
 
-## 3. 代码分析
+## 4. 代码分析
 
-### 3.1 系统调用号
+### 4.1 系统调用号
 
 在 `include/xos/syscall.h` 中定义系统调用号相关的数据与功能。目前我们暂定实现 64 个系统调用，其中第 0 号系统调用为 `SYS_TEST`。
 
@@ -75,7 +114,7 @@ void syscall_check(u32 sys_num) {
 }
 ```
 
-### 3.2 系统调用处理
+### 4.2 系统调用处理
 
 > 代码位于 `kernel/syscall.c`
 
@@ -105,7 +144,7 @@ void syscall_init() {
 }
 ```
 
-### 3.3 系统调用入口
+### 4.3 系统调用入口
 
 首先在 `kernel/handler.asm` 中分离出 `interrupt_exit` 逻辑（即 `interrupt_entry` 负责压栈保存，`interrupt_exit` 负责出栈恢复）。
 
@@ -166,7 +205,7 @@ syscall_entry:
     jmp interrupt_exit
 ```
 
-### 3.4 中断注册
+### 4.4 中断注册
 
 在 IDT 中，将系统调用入口注册到中断向量 0x80。
 
@@ -195,7 +234,7 @@ void idt_init() {
 }
 ```
 
-## 4. 功能测试
+## 5. 功能测试
 
 在 `kernel/main.c` 搭建测试框架：
 
@@ -300,3 +339,10 @@ _start:
 ```
 
 预期为，触发 `panic: syscall is not implemented!!!`。
+
+## 6. 参考文献
+
+- <https://wiki.osdev.org/System_Calls>
+
+
+[04_Interrupt_and_Clock]: ../04_interrupt_and_timer/
