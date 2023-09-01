@@ -1,5 +1,6 @@
 #include <xos/syscall.h>
 #include <xos/interrupt.h>
+#include <xos/task.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
 
@@ -18,9 +19,15 @@ static void sys_default() {
     panic("syscall is not implemented!!!");
 }
 
-// 系统调用 test
-static void sys_test() {
+// 系统调用 test 的处理函数
+static u32 sys_test() {
     LOGK("syscall test...\n");
+    return 255;
+}
+
+// 系统调用 yield 的处理函数
+static void sys_yield() {
+    schedule();
 }
 
 // 初始化系统调用
@@ -29,5 +36,6 @@ void syscall_init() {
         syscall_table[i] = sys_default;
     }
 
-    syscall_table[SYS_TEST] = sys_test;
+    syscall_table[SYS_TEST]  = sys_test;
+    syscall_table[SYS_YIELD] = sys_yield;
 }

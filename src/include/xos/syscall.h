@@ -8,6 +8,7 @@
 
 typedef enum syscall_t {
     SYS_TEST = 0,
+    SYS_YIELD = 1,
 } syscall_t;
 
 // 检测系统调用号是否合法
@@ -15,5 +16,10 @@ void syscall_check(u32 sys_num);
 
 // 初始化系统调用
 void syscall_init();
+
+
+/***** 声明封装后的系统调用 *****/
+u32 test();
+void yield();
 
 #endif

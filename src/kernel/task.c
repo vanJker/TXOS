@@ -5,6 +5,7 @@
 #include <xos/memory.h>
 #include <xos/interrupt.h>
 #include <xos/string.h>
+#include <xos/syscall.h>
 
 extern void task_switch(task_t *next);
 
@@ -59,6 +60,8 @@ task_t *current_task() {
 
 // 任务调度
 void schedule() {
+    assert(get_irq_state() == 0);
+
     task_t *current = current_task();       // 获取当前任务
     task_t *next = task_search(TASK_READY); // 查找一个就绪任务
 
@@ -126,6 +129,7 @@ u32 thread_a() {
 
     while (true) {
         printk("A");
+        yield();
     }
 }
 
@@ -134,6 +138,7 @@ u32 thread_b() {
 
     while (true) {
         printk("B");
+        yield();
     }
 }
 
@@ -142,6 +147,7 @@ u32 thread_c() {
     irq_enable();
     while (true) {
         printk("C");
+        yield();
     }
 }
 
