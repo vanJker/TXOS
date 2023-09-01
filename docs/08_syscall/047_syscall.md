@@ -320,7 +320,7 @@ _start:
     jmp $ ; 阻塞
 ```
 
-预期为，打印 `syscall test...`。
+预期为，打印 `"syscall test..."`。
 
 --- 
 
@@ -338,7 +338,7 @@ _start:
     jmp $ ; 阻塞
 ```
 
-预期为，触发 `panic: syscall is not implemented!!!`。
+预期为，触发 `"panic: syscall is not implemented!!!"`。
 
 ## 6. 参考文献
 
