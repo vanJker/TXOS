@@ -5,14 +5,10 @@ CFLAGS += -fno-pic	# 不需要生成 PIC
 CFLAGS += -fomit-frame-pointer 				# 不生产栈帧信息
 CFLAGS += -mpreferred-stack-boundary=2		# 不需要进行栈对齐
 CFLAGS += -fno-asynchronous-unwind-tables 	# 不需要生成 CFI
+CFLAGS += -I ../src/include	# 头文件寻找路径
 CFLAGS :=$(strip ${CFLAGS})
 
-.PHONY: hello.s
-hello.s: hello.c
-	gcc $(CFLAGS) -S $< -o $@
-
-.PHONY: params.s
-params.s: params.c
+%.s: %.c
 	gcc $(CFLAGS) -S $< -o $@
 
 .PHONY: clean
