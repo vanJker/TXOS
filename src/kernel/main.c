@@ -24,7 +24,9 @@ void kernel_init() {
     task_init();
     syscall_init();
 
-    irq_enable(); // 打开外中断响应
+    list_test();
+
+    // irq_enable(); // 打开外中断响应
 
     hang();
     return;
