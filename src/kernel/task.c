@@ -28,7 +28,7 @@ static task_t *get_free_task() {
 // 如果没有符合条件的任务，返回 NULL
 static task_t *task_search(task_state_t state) {
     // 查找过程保证中断关闭，防止查找有误
-    assert(get_irq_state() == 0);
+    ASSERT_IRQ_DISABLE();
 
     task_t *result = NULL;
     task_t *current = current_task();
@@ -60,7 +60,8 @@ task_t *current_task() {
 
 // 任务调度
 void schedule() {
-    assert(get_irq_state() == 0);
+    // 在中断门中使用了该函数（系统调用 yield）
+    ASSERT_IRQ_DISABLE();
 
     task_t *current = current_task();       // 获取当前任务
     task_t *next = task_search(TASK_READY); // 查找一个就绪任务
