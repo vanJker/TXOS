@@ -205,6 +205,13 @@ bool list_empty(list_t *list) {
 }
 ```
 
+宏 `ASSERT_NODE_FREE` 用于判断节点，当前是否处于任一链表当中。
+
+```c
+// 节点没有位于任一链表中
+#define ASSERT_NODE_FREE(node) assert(((node)->prev == NULL) && ((node)->next == NULL))
+```
+
 ## 6. 功能测试
 
 在 `kernel/main.c` 搭建测试框架：

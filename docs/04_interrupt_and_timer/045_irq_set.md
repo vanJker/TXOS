@@ -16,6 +16,9 @@ void irq_disable();     // 关闭外中断响应，即清除 IF 位
 void irq_enable();      // 打开外中断响应，即设置 IF 位
 void irq_save();        // 保存当前的外中断状态，并关闭外中断
 void irq_restore();     // 将外中断状态恢复为先前的外中断状态
+
+// 外中断响应处于禁止状态，即 IF 位为 0
+#define ASSERT_IRQ_DISABLE() assert(get_irq_state() == 0)
 ```
 
 ## 3. 代码分析

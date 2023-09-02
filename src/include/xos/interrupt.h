@@ -9,8 +9,8 @@
 #define IRQ_MASTER_NR 0x20  // 主片起始向量号
 #define IRQ_SLAVE_NR  0x28  // 从片起始向量号
 
-// 禁止外中断响应
-#define ASSERT_IRQ_DISABLE() (get_irq_state() == 0)
+// 外中断响应处于禁止状态
+#define ASSERT_IRQ_DISABLE() assert(get_irq_state() == 0)
 
 // 外中断 IRQ(interrupt request)
 enum irq_t {
