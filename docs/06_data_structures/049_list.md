@@ -279,3 +279,24 @@ void list_test() {
 使用调试来跟踪每一功能的执行，与注释所给的预期进行对比，如果与预期不符，则寻找修复 BUG。除此之外，在过程中观察链表结构，也是一个快速定位 BUG 的方法。
 
 > 分配的地址从 0x105000 开始，这是因为在之前的 `task_init()` 已经分配了 3 页内存去作为 PCB 了，再加上可分配内存是从地址 0x102000 开始的。
+
+## 7. 泛型数据
+
+现在对之前两个神秘的宏 `element_offset` 和 `element_entry` 进行解释说明：
+
+```c
+#define element_offset(type, member) (u32)(&(type *)0->member)
+#define element_entry(type, member, ptr) (type *)((u32)ptr - element_offset(type, member))
+```
+
+**这两个宏的作用是，通过结构体的某个成员的指针 / 地址，获取这个结构体的指针 / 地址。**
+
+`element_offset` 中 `&(type *)0->member` 为获得成员 `member` 在结构体 `type` 中的偏移值。为什么获得的是偏移值，而不是地址，这是因为使用 `(type *)0` 这个巧妙的技巧，示意图如下：
+
+![](./images/list_element.drawio.svg)
+
+`element_entry` 则通过某一结构体（暂且称之为 T）中某一成员 `member` 的指针 `ptr`，并计算成员 `member` 在结构体 `type` 中的偏移，通过 `ptr` 减去偏移，即可得到 `ptr` 所指向的成员 `member` 所在的结构体 T 的起始地址，也就是获得了该结构体 T 的指针。
+
+所以，我们可以了使用这种思想来实现链表的泛型数据，将起链接作用的 `node` 作为上面所述结构体的成员 `member`。这样我们就可以通过 `node` 的指针 / 地址，来获取链表中该 `node` 所对应的结构体的指针。以 PCB 为例，以示意图如下：
+
+![](./images/pcb_list.drawio.svg)
