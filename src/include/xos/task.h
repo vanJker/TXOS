@@ -4,14 +4,19 @@
 #include <xos/types.h>
 #include <xos/bitmap.h>
 #include <xos/xos.h>
+#include <xos/list.h>
 
 #define KERNEL_TASK 0 // 内核任务
 #define USER_TASK   1 // 用户任务
 
 // 任务名称的长度
 #define TASK_NAME_LEN 16
+
 // 任务数量
 #define NUM_TASKS 64
+
+// 任务是否处于阻塞状态
+#define ASSERT_BLOCKED_STATE(state) (((state) != TASK_RUNNING) && ((state) != TASK_READY))
 
 typedef u32 target_t;
 
@@ -29,6 +34,7 @@ typedef enum task_state_t {
 // 任务控制块 TCB
 typedef struct task_t {
     u32 *stack;                 // 内核栈
+    list_node_t node;           // 任务阻塞节点
     task_state_t state;         // 任务状态
     char name[TASK_NAME_LEN];   // 任务名称
     u32 priority;               // 任务优先级
@@ -51,9 +57,17 @@ typedef struct task_frame_t {
 
 // 初始化任务管理
 void task_init();
+
 // 当前任务
 task_t *current_task();
+
 // 任务调度
 void schedule();
+
+// 阻塞任务
+void task_block(task_t *task, list_t *blocked_list, task_state_t state);
+
+// 结束阻塞任务
+void task_unblock(task_t *task);
 
 #endif

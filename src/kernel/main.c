@@ -1,6 +1,5 @@
 extern void hang();
 extern void irq_enable();
-
 extern void console_init();
 extern void gdt_init();
 extern void interrupt_init();
@@ -24,9 +23,7 @@ void kernel_init() {
     task_init();
     syscall_init();
 
-    list_test();
-
-    // irq_enable(); // 打开外中断响应
+    irq_enable(); // 打开外中断响应
 
     hang();
     return;

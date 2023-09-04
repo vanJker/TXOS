@@ -19,6 +19,7 @@ void syscall_init();
 
 
 /***** 声明封装后的系统调用 *****/
+
 u32 test();
 void yield();
 

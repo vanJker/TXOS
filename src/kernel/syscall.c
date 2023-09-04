@@ -19,9 +19,22 @@ static void sys_default() {
     panic("syscall is not implemented!!!");
 }
 
+static task_t *task = NULL; // 当前阻塞任务
+
 // 系统调用 test 的处理函数
 static u32 sys_test() {
-    LOGK("syscall test...\n");
+    // LOGK("syscall test...\n");
+
+    if (task == NULL) { // 如果当前没有任务被阻塞，则阻塞当前任务
+        task = current_task();
+        // LOGK("block task 0x%p\n", task);
+        task_block(task, NULL, TASK_BLOCKED);
+    } else {            // 否则结束阻塞当前的阻塞任务
+        task_unblock(task);
+        // LOGK("unblock task 0x%p\n", task);
+        task = NULL;
+    }
+
     return 255;
 }
 

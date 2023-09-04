@@ -12,6 +12,9 @@ extern void task_switch(task_t *next);
 // 任务队列
 static task_t *task_queue[NUM_TASKS];
 
+// 默认的阻塞任务队列
+static list_t blocked_queue;
+
 // 从任务队列获取一个空闲的任务，并分配 TCB
 static task_t *get_free_task() {
     for (size_t i = 0; i < NUM_TASKS; i++) {
@@ -125,12 +128,53 @@ static void task_setup() {
     memset(task_queue, 0, sizeof(task_queue));
 }
 
+// 阻塞任务
+void task_block(task_t *task, list_t *blocked_list, task_state_t state) {
+    // 涉及阻塞队列这个临界区
+    ASSERT_IRQ_DISABLE();
+
+    // 任务没有位于任一阻塞队列中
+    ASSERT_NODE_FREE(&task->node);
+
+    // 如果加入的阻塞队列为 NULL，则加入默认的阻塞队列
+    if (blocked_list == NULL) {
+        blocked_list = &blocked_queue;
+    }
+
+    // 加入阻塞队列，并将任务状态修改为阻塞
+    list_push_back(blocked_list, &task->node);
+    ASSERT_BLOCKED_STATE(state);
+    task->state = state;
+
+    // 如果阻塞的是当前任务，则立即进行调度
+    task_t *current = current_task();
+    if (current == task) {
+        schedule();
+    }
+}
+
+// 结束阻塞任务
+void task_unblock(task_t *task) {
+    // 涉及阻塞队列这个临界区
+    ASSERT_IRQ_DISABLE();
+
+    // 在任务所处的阻塞队列进行删除
+    list_remove(&task->node);
+
+    // 任务此时没有位于任一阻塞队列当中
+    ASSERT_NODE_FREE(&task->node);
+
+    // 任务状态修改为就绪
+    task->state = TASK_READY;
+}
+
 u32 thread_a() {
     irq_enable();
 
     while (true) {
         printk("A");
-        yield();
+        // yield();
+        test();
     }
 }
 
@@ -139,7 +183,8 @@ u32 thread_b() {
 
     while (true) {
         printk("B");
-        yield();
+        // yield();
+        test();
     }
 }
 
@@ -148,12 +193,15 @@ u32 thread_c() {
     irq_enable();
     while (true) {
         printk("C");
-        yield();
+        // yield();
+        test();
     }
 }
 
 // 初始化任务管理
 void task_init() {
+    list_init(&blocked_queue);
+
     task_setup();
 
     task_create((target_t)thread_a, "a", 5, KERNEL_TASK);
