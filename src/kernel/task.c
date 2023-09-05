@@ -15,6 +15,9 @@ static task_t *task_queue[NUM_TASKS];
 // 默认的阻塞任务队列
 static list_t blocked_queue;
 
+// 空闲任务
+static task_t *idle_task;
+
 // 从任务队列获取一个空闲的任务，并分配 TCB
 static task_t *get_free_task() {
     for (size_t i = 0; i < NUM_TASKS; i++) {
@@ -43,9 +46,14 @@ static task_t *task_search(task_state_t state) {
             continue;
         }
 
-        if (result == NULL || task->priority > result->priority || task->jiffies < result->jiffies) {
+        if (result == NULL || task->ticks > result->ticks || task->jiffies < result->jiffies) {
             result = task;
         }
+    }
+
+    // 当无法寻找到任一就绪的任务时，返回 idle 这个空闲任务
+    if (result == NULL && state == TASK_READY) {
+        result = idle_task;
     }
 
     return result;
@@ -168,35 +176,8 @@ void task_unblock(task_t *task) {
     task->state = TASK_READY;
 }
 
-u32 thread_a() {
-    irq_enable();
-
-    while (true) {
-        printk("A");
-        // yield();
-        test();
-    }
-}
-
-u32 thread_b() {
-    irq_enable();
-
-    while (true) {
-        printk("B");
-        // yield();
-        test();
-    }
-}
-
-u32 thread_c() {
-
-    irq_enable();
-    while (true) {
-        printk("C");
-        // yield();
-        test();
-    }
-}
+extern void idle_thread();
+extern void init_thread();
 
 // 初始化任务管理
 void task_init() {
@@ -204,7 +185,6 @@ void task_init() {
 
     task_setup();
 
-    task_create((target_t)thread_a, "a", 5, KERNEL_TASK);
-    task_create((target_t)thread_b, "b", 5, KERNEL_TASK);
-    task_create((target_t)thread_c, "c", 5, KERNEL_TASK);
+    idle_task = task_create((target_t)idle_thread, "idle", 1, KERNEL_TASK);
+    task_create((target_t)init_thread, "init", 5, USER_TASK);
 }
