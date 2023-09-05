@@ -126,6 +126,8 @@ static task_t *get_free_task() {
 
 在任务队列中寻找符合某一种状态的任务，在查找过程中，不查找自己。如果有符合条件的任务，则在这些任务中选择 **优先级最高** 并且 **距离上次运行时间最久**（防止任务饿死） 的任务。如果没有符合条件的任务，则返回 `NULL`。
 
+同时需要注意，任务的剩余时间片的初始值等于任务的优先级，那么我们可以设计任务的优先级随剩余时间片动态变化，即任务的剩余时间片越多，则任务的优先级越高，反之则越低。这个设计也是符合直觉的，优先运行剩余时间片多的任务，可以有效地抑制任务”饿死“。
+
 注意在查找任务前，必须保证 **外中断响应关闭**，防止查找出错（这同时也方便调试排错，关闭外中断响应会使得执行逻辑清晰）。
 
 ```c
@@ -143,7 +145,7 @@ static task_t *task_search(task_state_t state) {
             continue;
         }
 
-        if (result == NULL || task->priority > result->priority || task->jiffies < result->jiffies) {
+        if (result == NULL || task->ticks > result->ticks || task->jiffies < result->jiffies) {
             result = task;
         }
     }
@@ -239,7 +241,7 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
     task->stack = (u32 *)stack;
     task->state = TASK_READY;
     task->priority = priority;
-    task->ticks = task->priority; // 默认剩余时间 = 优先级
+    task->ticks = task->priority; // 默认剩余时间片 = 优先级
     task->jiffies = 0;
     task->uid = uid;
     task->page_dir = NULL;  // TODO:
