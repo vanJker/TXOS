@@ -18,6 +18,8 @@
 #define CLOCK_COUNTER (OSCILLATOR / CLOCK_HZ)
 #define BEEP_COUNTER  (OSCILLATOR / BEEP_HZ)
 
+// 时间片的 ms 数
+const u32 jiffy = (1000 / CLOCK_HZ);
 // 时间片计数器
 u32 volatile jiffies = 0;
 // 蜂鸣器计数器

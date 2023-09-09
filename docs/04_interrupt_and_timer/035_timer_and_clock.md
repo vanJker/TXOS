@@ -185,6 +185,13 @@ void set_interrupt_mask(u32 irq, bool enable) {
 
 CPU 的时钟一秒计数 `OSCILLATOR` 次，而我们需要时钟中断发生频率为一秒 `HZ` 次，所以要求 CPU 计数器每间隔 `(OSCILLATOR / HZ)` 次计数，就发生时钟中断。
 
+同理，可以计算出一个时间片的 ms 数，$1 s = 1000 ms$，而且一秒发生 `HZ` 次时钟中断（即 `HZ` 个时间片），所以一个时间片等于 `(1000 / HZ)` ms。
+
+```c
+#define JIFFY (1000 / HZ)
+const u32 jiffy = JIFFY;
+```
+
 ---
 
 时钟中断处理函数：
