@@ -5,7 +5,7 @@
 - 8086 处理器只有 1M 内存，16 位实模式，理论上病毒可以完全控制计算机
 - 80286 处理器为 16 位保护模式
 
-![80286 segment descriptor](../images/9-1.jpg)
+![80286 segment descriptor](./images/80286-segment-descriptor.jpg)
 
 ### 1.1 保护模式 Protected Mode
 
@@ -21,7 +21,7 @@
 - 内存的长度：界限 = 长度 - 1
 - 内存属性 / 访问权限
 
-![80386 segment descriptor](../images/9-2.jpg)
+![80386 segment descriptor](./images/80386-segment-descriptor.jpg)
 
 ```c
 typedef struct descriptor /* 共 8 个字节 */

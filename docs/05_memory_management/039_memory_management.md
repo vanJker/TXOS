@@ -4,7 +4,7 @@
 
 ## 1. 原理说明
 
-有些相关的原理说明位于 [<008 内存检测>](../01_bootloader/008_detect_memort.md) 处，例如 `ARDS` 结构体。
+有些相关的原理说明位于 [<008 内存检测>](../01_bootloader/008_detect_memory.md) 处，例如 `ARDS` 结构体。
 
 以下是目前的内存分布图：
 

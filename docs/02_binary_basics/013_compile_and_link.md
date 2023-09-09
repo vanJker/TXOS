@@ -1,6 +1,6 @@
 # 013 编译和链接
 
-![compile_and_link](../images/13-1.svg)
+![compile_and_link](./images/compile_and_link.svg)
 
 ## 1. 预处理
 

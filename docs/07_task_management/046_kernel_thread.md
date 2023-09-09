@@ -417,15 +417,11 @@ void console_write(char *buf, size_t count, u8 attr) {
 }
 ```
 
-![](../images/pic.png)
-
-![](../images/pic2.png)
-
 经过观察，确实解决了缓冲区数据竞争问题。
 
 > 思考一下，为什么共享内存的多核系统（SMP），无法通过关闭外中断响应来实现临界区加锁？
 
 
 
-[028_task_context]: ../04_interrupt_and_timer/028_task_context.md
-[034_interrupt_context]: ../04_interrupt_and_timer/034_interrupt_context.md
+[028_task_context]: ../04_interrupt_and_clock/028_task_context.md
+[034_interrupt_context]: ../04_interrupt_and_clock/034_interrupt_context.md

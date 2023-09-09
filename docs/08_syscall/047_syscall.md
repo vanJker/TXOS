@@ -80,7 +80,7 @@ message_end:
 
 以下为中断处理进入复用逻辑 `interrupt_exit` 之前的栈结构：
 
-![](../04_interrupt_and_timer/images/interrupt_context.drawio.svg)
+![](../04_interrupt_and_clock/images/interrupt_context.drawio.svg)
 
 ## 4. 代码分析
 
@@ -345,4 +345,4 @@ _start:
 - <https://wiki.osdev.org/System_Calls>
 
 
-[04_Interrupt_and_Clock]: ../04_interrupt_and_timer/
+[04_Interrupt_and_Clock]: ../04_interrupt_and_clock/

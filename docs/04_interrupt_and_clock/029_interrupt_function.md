@@ -32,7 +32,7 @@ BTW，硬盘读写的主要方式有以下 3 种：
 
 ### 1.3 内核代码构成示意图
 
-![](../images/29-1.svg)
+![](./images/code_construction.svg)
 
 ## 2. 中断函数
 

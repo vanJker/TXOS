@@ -82,7 +82,7 @@
 
 ## 6. GP(0x0D) 异常错误码
 
-![](../images/31-1.svg)
+![](./images/gp_error_code.svg)
 
 | 索引  | 长度 | 名称              | 描述           |
 | ----- | ---- | ----------------- | -------------- |
@@ -115,7 +115,7 @@ TBL:
 int -> INTERRUPT_ENTRY_%n -> interrupt_entry -> 具体的中断处理函数 -> interrupt_enrty -> iret
 ```
 
-![](../images/31-2.svg)
+![](./images/interrupt_path.svg)
 
 ## 8. 代码分析
 

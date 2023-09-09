@@ -137,14 +137,14 @@ read_disk:
 #### 内存 0x1000 的内容
 
 `call read_disk` 之前：
-![](../images/6-1.png)
+![](./images/6-1.png)
 
 `call read_disk` 之后：
-![](../images/6-2.png)
+![](./images/6-2.png)
 
 #### 内存 0x7c00 的内容
 
-![](../images/6-3.png)
+![](./images/6-3.png)
 
 观察可知，地址 0x1000 与 0x7c00 起始的 512 字节内容相同，成功正确地读取硬盘内容！！！
 

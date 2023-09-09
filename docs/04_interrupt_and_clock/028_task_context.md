@@ -36,7 +36,7 @@ System V ABI
 
 ## 4. 任务内存分布
 
-![](../images/28-1.svg)
+![](./images/task_frame.svg)
 
 我们使用内核栈来保存任务的上下文，所以在 PCB (Process Control Block) 中只需要保存 esp 寄存器值就可以获得全部的任务上下文信息。
 
@@ -111,7 +111,7 @@ task_switch:
 
 下面是函数调用返回和任务切换的对比示意图：
 
-![](../images/28-2.svg)
+![](./images/task_switch.svg)
 
 ### 5.3 任务相关操作
 
