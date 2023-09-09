@@ -18,7 +18,7 @@
 #define CLOCK_COUNTER (OSCILLATOR / CLOCK_HZ)
 #define BEEP_COUNTER  (OSCILLATOR / BEEP_HZ)
 
-// 时间片的 ms 数
+// 一个时间片对应的 ms 数
 const u32 jiffy = (1000 / CLOCK_HZ);
 // 时间片计数器
 u32 volatile jiffies = 0;
@@ -52,6 +52,9 @@ void clock_handler(int vector) {
 
     // 每个时间片结束前都需要检查当前蜂鸣是否完成（蜂鸣持续 5 个时间片）
     stop_beep();
+
+    // 唤醒睡眠结束的任务
+    task_wakeup();
 
     // 更新时间片计数
     jiffies++;

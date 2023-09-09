@@ -43,6 +43,11 @@ static void sys_yield() {
     schedule();
 }
 
+// 系统调用 sleep 的处理函数
+static void sys_sleep(u32 ms) {
+    task_sleep(ms);
+}
+
 // 初始化系统调用
 void syscall_init() {
     for (size_t i = 0; i < SYSCALL_SIZE; i++) {
@@ -50,5 +55,6 @@ void syscall_init() {
     }
 
     syscall_table[SYS_TEST]  = sys_test;
+    syscall_table[SYS_SLEEP] = sys_sleep;
     syscall_table[SYS_YIELD] = sys_yield;
 }

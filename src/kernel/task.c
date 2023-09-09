@@ -6,14 +6,20 @@
 #include <xos/interrupt.h>
 #include <xos/string.h>
 #include <xos/syscall.h>
+#include <xos/stdlib.h>
 
 extern void task_switch(task_t *next);
+extern u32 volatile jiffies;
+extern const u32 jiffy;
 
 // 任务队列
 static task_t *task_queue[NUM_TASKS];
 
 // 默认的阻塞任务队列
 static list_t blocked_queue;
+
+// 睡眠任务队列
+static list_t sleeping_queue;
 
 // 空闲任务
 static task_t *idle_task;
@@ -176,15 +182,83 @@ void task_unblock(task_t *task) {
     task->state = TASK_READY;
 }
 
+// 任务睡眠一段时间
+void task_sleep(u32 ms) {
+    // 涉及睡眠队列这个临界区
+    ASSERT_IRQ_DISABLE();
+
+    // 睡眠时间不能为 0
+    assert(ms > 0);
+
+    // 睡眠的时间片数量向上取整
+    u32 ticks = div_round_up(ms, jiffy);
+
+    // 记录睡眠结束时的全局时间片，因为在那个时刻应该要唤醒任务
+    task_t *current = current_task();
+    current->ticks = jiffies + ticks;
+
+    // 从睡眠链表中找到第一个比当前任务唤醒时间点更晚的任务，进行插入排序
+    list_t *list = &sleeping_queue;
+
+    list_node_t *anchor = &list->tail;
+    for (list_node_t *ptr = list->head.next; ptr != &list->tail; ptr = ptr->next) {
+        task_t *task = element_entry(task_t, node, ptr);
+        
+        if (task->ticks > current->ticks) {
+            anchor = ptr;
+            break;
+        }
+    }
+
+    // 保证当前任务没有位于任何阻塞 / 睡眠队列当中
+    ASSERT_NODE_FREE(&current->node);
+
+    // 插入链表
+    list_insert_before(anchor, &current->node);
+
+    // 设置阻塞状态为睡眠
+    current->state = TASK_SLEEPING;
+
+    // 调度执行其它任务
+    schedule();
+}
+
+// 唤醒任务
+void task_wakeup() {
+    // 涉及睡眠队列这个临界区
+    ASSERT_IRQ_DISABLE();
+
+    // 从睡眠队列中找到任务成员 ticks 小于或等于全局当前时间片 jiffies 的任务
+    // 结束这些任务的阻塞 / 睡眠，进入就绪状态
+    list_t *list = &sleeping_queue;
+
+    for (list_node_t *ptr = list->head.next; ptr != &list->tail;) {
+        task_t *task = element_entry(task_t, node, ptr);
+
+        if (task->ticks > jiffies) {
+            break;
+        }
+
+        // task_unblock() 会清空链表节点的 prev 和 next 指针，所以需要事先保存
+        ptr = ptr->next;
+
+        // task->ticks = 0;
+        task_unblock(task);
+    }
+}
+
 extern void idle_thread();
 extern void init_thread();
+extern void test_thread();
 
 // 初始化任务管理
 void task_init() {
     list_init(&blocked_queue);
+    list_init(&sleeping_queue);
 
     task_setup();
 
     idle_task = task_create((target_t)idle_thread, "idle", 1, KERNEL_TASK);
     task_create((target_t)init_thread, "init", 5, USER_TASK);
+    task_create((target_t)test_thread, "test", 5, KERNEL_TASK);
 }

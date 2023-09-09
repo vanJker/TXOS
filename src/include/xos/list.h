@@ -3,7 +3,7 @@
 
 #include <xos/types.h>
 
-#define element_offset(type, member) (u32)(&(type *)0->member)
+#define element_offset(type, member) (u32)(&((type *)0)->member)
 #define element_entry(type, member, ptr) (type *)((u32)ptr - element_offset(type, member))
 
 // 节点没有位于任一链表中

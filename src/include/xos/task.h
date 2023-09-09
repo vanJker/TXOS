@@ -70,4 +70,10 @@ void task_block(task_t *task, list_t *blocked_list, task_state_t state);
 // 结束阻塞任务
 void task_unblock(task_t *task);
 
+// 任务睡眠一段时间
+void task_sleep(u32 ms);
+
+// 唤醒任务
+void task_wakeup();
+
 #endif
