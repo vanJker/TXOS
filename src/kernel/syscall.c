@@ -40,7 +40,7 @@ static u32 sys_test() {
 
 // 系统调用 yield 的处理函数
 static void sys_yield() {
-    schedule();
+    task_yield();
 }
 
 // 系统调用 sleep 的处理函数

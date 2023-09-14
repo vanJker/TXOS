@@ -142,6 +142,12 @@ static void task_setup() {
     memset(task_queue, 0, sizeof(task_queue));
 }
 
+// 任务主动放弃执行权
+void task_yield() {
+    // 即主动调度到其它空闲任务执行
+    schedule();
+}
+
 // 阻塞任务
 void task_block(task_t *task, list_t *blocked_list, task_state_t state) {
     // 涉及阻塞队列这个临界区

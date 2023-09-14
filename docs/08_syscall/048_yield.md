@@ -70,11 +70,11 @@ void kernel_init() {
 ```c
 // 系统调用 yield 的处理函数
 static void sys_yield() {
-    schedule();
+    task_yield();
 }
 ```
 
-这样使得 `schedule()` 是在中断门中被调用，需要保证进入 `schedule()` 时，外中断响应已被关闭。
+其中我们使用 `task_yield()` 来封装 `schedule()`，这样使得 `schedule()` 会在中断门中被调用，需要保证进入 `schedule()` 时，外中断响应已被关闭。
 
 > 代码位于 `kernel/task.c`
 
@@ -82,6 +82,12 @@ static void sys_yield() {
 void schedule() {
     assert(get_irq_state() == 0);
     ...
+}
+
+// 任务主动放弃执行权
+void task_yield() {
+    // 即主动调度到其它空闲任务执行
+    schedule();
 }
 ```
 

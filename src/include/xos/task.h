@@ -64,6 +64,9 @@ task_t *current_task();
 // 任务调度
 void schedule();
 
+// 任务主动放弃执行权
+void task_yield();
+
 // 阻塞任务
 void task_block(task_t *task, list_t *blocked_list, task_state_t state);
 
