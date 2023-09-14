@@ -123,15 +123,17 @@ u32 get_irq_state() {
     );
 }
 
-// 设置 IF 位
-static _inline void set_irq_state(u32 state) {
+// 设置外中断响应状态，即设置 IF 位
+void set_irq_state(u32 state) {
     if (state) asm volatile("sti\n");
     else       asm volatile("cli\n"); 
 }
 
-// 关闭外中断响应，即清除 IF 位
-void irq_disable() {
+// 关闭外中断响应，即清除 IF 位，并返回关中断之前的状态
+u32 irq_disable() {
+    u32 pre_irq_state = get_irq_state();
     set_irq_state(false);
+    return pre_irq_state;
 }
 
 // 打开外中断响应，即设置 IF 位
@@ -139,23 +141,43 @@ void irq_enable() {
     set_irq_state(true);
 }
 
-// 先前的外中断响应状态
-#define IRQ_STORE_LEN 32
-static u32 pre_irq_states[IRQ_STORE_LEN];
-static size_t irq_store_index = 0;
+// 禁止外中断响应状态的次数，也即调用 irq_save() 的次数
+static size_t irq_off_count = 0;
+// 首次调用 irq_save() 时保存的外中断状态，因为只有此时才有可能为使能状态
+static u32 first_irq_state;
 
 // 保存当前的外中断状态，并关闭外中断
 void irq_save() {
-    assert(irq_store_index < IRQ_STORE_LEN);
-    pre_irq_states[irq_store_index++] = get_irq_state();
-    asm volatile("cli\n"); // 关闭中断
+    // 获取当前的外中断状态
+    u32 pre_irq_state = get_irq_state();
+    
+    // 关闭中断，也保证了后续的临界区访问
+    irq_disable();
+
+    // 如果是首次调用，需要保存此时的外中断状态
+    if (irq_off_count == 0) {
+        first_irq_state = pre_irq_state;
+    }
+
+    // 更新禁止外中断状态的次数
+    irq_off_count++;
 }
 
 // 将外中断状态恢复为先前的外中断状态
 void irq_restore() {
-    assert(irq_store_index > 0);
-    u32 pre_irq_state = pre_irq_states[--irq_store_index];
-    set_irq_state(pre_irq_state);
+    // 使用 irq_restore 时必须处于外中断禁止状态
+    ASSERT_IRQ_DISABLE();
+    
+    // 保证禁止外中断的次数不为 0，与 irq_save() 相对应
+    assert(irq_off_count > 0);
+
+    // 更新禁止外中断状态的次数
+    irq_off_count--;
+    
+    // 如果该调用对应首次调用 irq_save()，则设置为对应的外中断状态
+    if (irq_off_count == 0) {
+        set_irq_state(first_irq_state);
+    }
 }
 
 // 初始化中断控制器

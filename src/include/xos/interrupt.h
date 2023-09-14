@@ -62,8 +62,11 @@ void set_interrupt_mask(u32 irq, bool enable);
 // 获取当前的外中断响应状态，即获取 IF 位
 u32 get_irq_state();
 
-// 关闭外中断响应，即清除 IF 位
-void irq_disable();
+// 设置外中断响应状态，即设置 IF 位
+void set_irq_state(u32 state);
+
+// 关闭外中断响应，即清除 IF 位，并返回关中断之前的状态
+u32 irq_disable();
 
 // 打开外中断响应，即设置 IF 位
 void irq_enable();

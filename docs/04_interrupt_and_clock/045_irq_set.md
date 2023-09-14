@@ -69,28 +69,80 @@ void irq_enable() {
 
 `irq_restore()` 则是与 `irq_save()` 搭配使用，它的作用是将中断状态，恢复成之前 `irq_save()` 保存的那个状态。
 
-这两个函数对于后面的锁机制的实现十分重要。
-
-> 目前我们设计最多保存 64 个 IRQ 状态。
+这两个函数对于后面的锁机制的实现十分重要。参考 xv6，我们的实现如下：
 
 ```c
-// 先前的外中断响应状态
-#define IRQ_STORE_LEN 32
-static u32 pre_irq_states[IRQ_STORE_LEN];
-static size_t irq_store_index = 0;
+// 禁止外中断响应状态的次数，也即调用 irq_save() 的次数
+static size_t irq_off_count = 0;
+// 首次调用 irq_save() 时保存的外中断状态，因为只有此时才有可能为使能状态
+static u32 first_irq_state;
 
 // 保存当前的外中断状态，并关闭外中断
 void irq_save() {
-    assert(irq_store_index < IRQ_STORE_LEN);
-    pre_irq_states[irq_store_index++] = get_irq_state();
-    asm volatile("cli\n"); // 关闭中断
+    // 获取当前的外中断状态
+    u32 pre_irq_state = get_irq_state();
+    
+    // 关闭中断，也保证了后续的临界区访问
+    irq_disable();
+
+    // 如果是首次调用，需要保存此时的外中断状态
+    if (irq_off_count == 0) {
+        first_irq_state = pre_irq_state;
+    }
+
+    // 更新禁止外中断状态的次数
+    irq_off_count++;
 }
 
 // 将外中断状态恢复为先前的外中断状态
 void irq_restore() {
-    assert(irq_store_index > 0);
-    u32 pre_irq_state = pre_irq_states[--irq_store_index];
-    set_irq_state(pre_irq_state);
+    // 使用 irq_restore 时必须处于外中断禁止状态
+    ASSERT_IRQ_DISABLE();
+    
+    // 保证禁止外中断的次数不为 0，与 irq_save() 相对应
+    assert(irq_off_count > 0);
+
+    // 更新禁止外中断状态的次数
+    irq_off_count--;
+    
+    // 如果该调用对应首次调用 irq_save()，则设置为对应的外中断状态
+    if (irq_off_count == 0) {
+        set_irq_state(first_irq_state);
+    }
+}
+```
+
+- 首次调用 `irq_save()` 时的外中断状态，既可能为禁止状态，也可能为使能状态。而其它调用时的外中断状态，只可能为禁止状态，因为 `irq_save()` 的功能为，保存当前的外中断状态，禁止外中断响应。所以我们只需要保存首次调用 `irq_save()` 时的外中断状态，即 `first_irq_state`。
+- 因为其它调用时，外中断状态只可能为禁止，以及 `irq_restore()` 必须要与 `irq_save()` 配对使用，所以我们只需记录调用次数，这样就可以保证 `irq_restore()` 只有在对应 `irq_save()` 首次被调用时，才会恢复为 `first_irq_state` 状态。
+- 同上，`irq_restore()` 必须要与 `irq_save()` 配对使用，所以调用 `irq_restore()` 时必须处于外中断禁止状态。同理，`irq_save()` 的调用次数也必须大于 0。
+- 这两个函数内部都是在外中断响应禁止状态下进行执行的，保证了函数体后续对临界区的访问操作。
+
+---
+
+但是以上设计不能实现每个进程的外中断状态的各自分离保存，而是以 CPU 为单位来保存外中断响应状态。因为我们是用 `static` 来将这些状态保存的内存当中，任一进程均可访问。
+
+要实现每个进程的外中断响应状态的分离保存，需要将这些状态保存在每个进程独有的地方，那就是 —— 栈！！！因为每个进程的栈都是独有的，别的进程不太可能去访问（因为当前并没有实现内存保护，所以其它进程想访问其它进程的栈，还是可以做到的）。所以我们改造 `irq_disabe()` 如下：
+
+```c
+// 关闭外中断响应，即清除 IF 位，并返回关中断之前的状态
+u32 irq_disable() {
+    u32 pre_irq_state = get_irq_state();
+    set_irq_state(false);
+    return pre_irq_state;
+}
+```
+
+那么使用方法如下：
+
+```c
+void intr_test() {
+    // 保存中断状态，并关闭中断
+    u32 irq = irq_disable();
+
+    // do something
+    
+    // 恢复之前保存的中断状态
+    set_irq_state(irq);
 }
 ```
 
@@ -135,8 +187,7 @@ void kernel_init() {
 目前还没有讲到锁机制，但是在锁机制上的应用如下：
 
 ```c
-void intr_test()
-{
+void intr_test() {
     irq_save();     // 保存中断状态，并关闭中断
 
     // do something
@@ -144,3 +195,5 @@ void intr_test()
     irq_restore();  // 恢复之前保存的中断状态
 }
 ```
+
+> 以上为参考示意，因为 `irq_save()` 和 `irq_restore()` 没有实现分离保存各个进程的外中断响应状态。实际中使用请参考之前的说明。

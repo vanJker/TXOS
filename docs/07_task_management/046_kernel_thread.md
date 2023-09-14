@@ -411,9 +411,9 @@ void kernel_init() {
 
 ```c
 void console_write(char *buf, size_t count, u8 attr) {
-    irq_save(); // 禁止外中断响应
+    u32 irq = irq_disable(); // 禁止外中断响应状态
     ...
-    irq_restore(); // 恢复外中断响应状态
+    set_irq_state(irq); // 恢复之前的外中断响应状态
 }
 ```
 
