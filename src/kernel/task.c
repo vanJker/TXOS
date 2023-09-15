@@ -253,14 +253,17 @@ void task_wakeup() {
     }
 }
 
+#include <xos/mutex.h>
 extern void idle_thread();
 extern void init_thread();
 extern void test_thread();
+extern mutex_t mutex;
 
 // 初始化任务管理
 void task_init() {
     list_init(&blocked_queue);
     list_init(&sleeping_queue);
+    mutex_init(&mutex);
 
     task_setup();
 

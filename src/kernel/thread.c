@@ -1,6 +1,7 @@
 #include <xos/interrupt.h>
 #include <xos/syscall.h>
 #include <xos/debug.h>
+#include <xos/mutex.h>
 
 // 空闲任务 idle
 void idle_thread() {
@@ -17,14 +18,18 @@ void idle_thread() {
     }
 }
 
+mutex_t mutex;
+
 // 初始化任务 init
 void init_thread() {
     irq_enable();
     u32 counter = 0;
 
     while (true) {
+        mutex_acquire(&mutex);
         LOGK("init task %d...\n", counter++);
-        sleep(500);
+        mutex_release(&mutex);
+        // sleep(500);
     }
 }
 
@@ -33,7 +38,9 @@ void test_thread() {
     u32 counter = 0;
 
     while (true) {
+        mutex_acquire(&mutex);
         LOGK("test task %d...\n", counter++);
-        sleep(800);
+        mutex_release(&mutex);
+        // sleep(800);
     }
 }

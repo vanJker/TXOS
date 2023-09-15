@@ -149,8 +149,6 @@ static void command_del(console_t *c) {
 
 // 向 console 当前光标处以 attr 样式写入一个字节序列
 void console_write(char *buf, size_t count, u8 attr) {
-    u32 irq = irq_disable(); // 禁止外中断响应状态
-
     char ch;
 
     while (count--) {
@@ -201,8 +199,6 @@ void console_write(char *buf, size_t count, u8 attr) {
     }
 
     set_cursor_addr(&console);
-
-    set_irq_state(irq); // 恢复之前的外中断响应状态
 }
 
 // 清空 console
