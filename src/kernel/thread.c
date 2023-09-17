@@ -18,7 +18,7 @@ void idle_thread() {
     }
 }
 
-mutex_t mutex;
+mutexlock_t lock;
 
 // 初始化任务 init
 void init_thread() {
@@ -26,9 +26,9 @@ void init_thread() {
     u32 counter = 0;
 
     while (true) {
-        mutex_acquire(&mutex);
+        mutexlock_acquire(&lock);
         LOGK("init task %d...\n", counter++);
-        mutex_release(&mutex);
+        mutexlock_release(&lock);
         // sleep(500);
     }
 }
@@ -38,9 +38,9 @@ void test_thread() {
     u32 counter = 0;
 
     while (true) {
-        mutex_acquire(&mutex);
+        mutexlock_acquire(&lock);
         LOGK("test task %d...\n", counter++);
-        mutex_release(&mutex);
+        mutexlock_release(&lock);
         // sleep(800);
     }
 }

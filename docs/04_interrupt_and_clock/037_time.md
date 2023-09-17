@@ -377,7 +377,7 @@ void kernel_init() {
 QFLAGS := -m 32M \
 			-boot c \
             ...
-            # 将时区设置成当前所在地时区
+# 将时区设置成当前所在地时区
 			-rtc base=localtime \ 
 ```
 

@@ -132,11 +132,10 @@ void mutex_release(mutex_t *mutex) {
 
 ## 6. 功能测试
 
-> 以下代码位于 `kernel/thread.c`
-
 ```c
-// 打印区域互斥量
-mutex_t mutex;
+/* kernel/thread.c */
+
+mutex_t mutex; // 显示内存区域互斥量
 
 void init_thread() {
     irq_enable();
@@ -159,13 +158,12 @@ void test_thread() {
         mutex_release(&mutex);
     }
 }
-```
 
-> 以下代码位于 `kernel/task.c`
+/********************************************************************/
 
-```c
-// 打印区域互斥量
-extern mutex_t mutex;
+/* kernel/task.c */
+
+extern mutex_t mutex; // 显示内存区域互斥量
 
 // 初始化任务管理
 void task_init() {
@@ -177,8 +175,15 @@ void task_init() {
 }
 ```
 
-- 测试没有使用信号量和使用信号量的情况，进行对比测试。
-- 使用信号量的情况，正常打印信息，没有出现因为数据竞争而导致的打印问题。
+测试没有使用互斥锁和使用互斥锁的情况，进行对比测试（可能需要使用 bochs 或 vmware 来测试，因为 qemu 有可能不会出现问题）。
+
+- 没有使用互斥锁的情况，打印时信息可能会出现错位、屏幕颜色变化、无法显示等问题。
+- 使用互斥锁的情况，正常打印信息，没有出现因为数据竞争而导致的打印问题。
+
+测试没有使用互斥量和使用互斥量的情况，进行对比测试（可能需要使用 bochs 或 vmware 来测试，因为 qemu 有可能不会出现问题）。
+
+- 没有使用互斥量的情况，打印时信息可能会出现错位、屏幕颜色变化、无法显示等问题。
+- 使用互斥量的情况，正常打印信息，没有出现因为数据竞争而导致的打印问题。
 
 ## 7. FAQ
 
@@ -201,7 +206,7 @@ void task_init() {
 > 
 > 同理，第二次进入 `mutex_release()` 时，必定是通过时钟中断的任务调度进入的，而触发时钟中断时，中断已经处于禁止状态，所以第二次进入 `mutex_release()` 的中断禁止状态得以保证。（这里并不完全准确，实际上只要是通过中断门进入 `mutex_release()` 的话，都可以保证处于中断禁止态，因为字中断门已经禁止了中断）
 
-## 参考文献
+## 8. 参考文献
 
 1. <https://en.wikipedia.org/wiki/Edsger_W._Dijkstra>
 2. <https://wiki.osdev.org/Atomic_operation>
