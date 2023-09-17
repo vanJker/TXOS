@@ -62,8 +62,10 @@ qemu 音频驱动需要使用以下参数：
 QFLAGS := -m 32M \
 			-boot c \
 			-drive file=$(IMG),if=ide,index=0,media=disk,format=raw \
-			-audiodev pa,id=hda \           # 音频驱动
-			-machine pcspk-audiodev=hda \   # PC Speaker/蜂鸣器
+# 音频驱动
+			-audiodev pa,id=hda \
+# PC Speaker/蜂鸣器
+			-machine pcspk-audiodev=hda \
 ```
 其中参数 `-drive file=$(IMG),if=ide,index=0,media=disk,format=raw` 与原先的 `-hda=$<` 的功能相同，只是更加灵活，可以通过 `if` 和 `format` 等参数来指定接口和磁盘镜像格式等。
 

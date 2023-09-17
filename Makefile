@@ -2,18 +2,19 @@
 TARGET := ./target
 SRC	:= ./src
 
-BOOT_BIN := $(TARGET)/bootloader/boot.bin
-LOADER_BIN := $(TARGET)/bootloader/loader.bin
+# img 格式的目标磁盘映像
 IMG := $(TARGET)/master.img
 
-KERNEL_LINKER := $(SRC)/kernel/linker.ld
+BOOT_BIN := $(TARGET)/bootloader/boot.bin
+LOADER_BIN := $(TARGET)/bootloader/loader.bin
+
 KERNEL_ENTRY := 0x10000
 KERNEL_ELF := $(TARGET)/kernel.elf
 KERNEL_BIN := $(TARGET)/kernel.bin
 KERNEL_SYM := $(TARGET)/kernel.map
 
-# ld 的目标文件参数次序必须满足依赖次序，且保证第一条指令在 0x10000 地址处
-# 所以必须要将 start.o 置于第一个参数位置
+# ld 的目标文件参数次序必须满足依赖次序，且保证第一条指令在 $(KERNEL_ENTRY) 地址处
+# 所以必须要将 start.o 置于 ld 命令的链接第一个参数位置
 KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/main.o \
 			   $(TARGET)/kernel/io.o \
@@ -34,6 +35,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/thread.o \
 			   $(TARGET)/kernel/mutex.o \
 
+# lib 的目标文件
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 
 # gcc 参数
@@ -44,14 +46,18 @@ CFLAGS += -fno-builtin	# 无需 gcc 内置函数
 CFLAGS += -fno-pic		# 无需位置无关代码 (pic: position independent code)
 CFLAGS += -fno-pie		# 无需位置无关的可执行程序 (pie: position independent executable)
 CFLAGS += -fno-stack-protector	# 无需栈保护
-CFLAGS:=$(strip ${CFLAGS}) # 去除 CFLAGS 中的换行符
+CFLAGS := $(strip ${CFLAGS}) 	# 去除 CFLAGS 中多余的空白符
 
-DEBUG_FLAGS := -g # debug 参数
-INCLUDE_FLAGS := -I $(SRC)/include # 头文件查找路径参数
+# debug 参数
+DEBUG_FLAGS := -g
+# 头文件查找路径参数
+INCLUDE_FLAGS := -I $(SRC)/include
 
+# ld 参数
+LDFLAGS := -m elf_i386 \
+			-static \
+			-Ttext $(KERNEL_ENTRY) \
 
-.PHONY: all
-all: qemu-run
 
 $(TARGET)/bootloader/%.bin: $(SRC)/bootloader/%.asm
 	$(shell mkdir -p $(dir $@))
@@ -71,7 +77,7 @@ $(TARGET)/lib/%.o: $(SRC)/lib/%.c
 
 $(KERNEL_ELF): $(KERNEL_OBJS) $(LIB_OBJS)
 	$(shell mkdir -p $(dir $@))
-	ld -m elf_i386 -static $^ -o $@ -Ttext $(KERNEL_ENTRY)
+	ld $(LDFLAGS) $^ -o $@
 
 $(KERNEL_BIN): $(KERNEL_ELF)
 	objcopy -O binary $< $@
@@ -93,10 +99,6 @@ $(IMG): $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM)
 	dd if=$(KERNEL_BIN) of=$@ bs=512 count=200 seek=10 conv=notrunc
 
 
-.PHONY: clean
-clean:
-	rm -rf $(TARGET)/*
-
 .PHONY: build
 build: $(IMG)
 
@@ -109,6 +111,7 @@ bochs-debug: $(IMG)
 	bochs-gdb -q -f ./bochs/bochsrc-gdb -unlock
 
 QEMU := qemu-system-i386
+# qemu 参数
 QFLAGS := -m 32M \
 			-boot c \
 			-drive file=$(IMG),if=ide,index=0,media=disk,format=raw \
@@ -130,3 +133,10 @@ $(VMDK): $(IMG)
 
 .PHONY: vmdk
 vmdk: $(VMDK)
+
+.PHONY: all
+all: qemu-run
+
+.PHONY: clean
+clean:
+	@rm -rf $(TARGET)

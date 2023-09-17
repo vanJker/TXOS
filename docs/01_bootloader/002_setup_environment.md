@@ -130,7 +130,7 @@ dd if=boot.bin of=master.img bs=512 count=1 conv=notrunc
 
 |  参数   | 说明 |
 | :----: | :--: |
-|   hd   | 硬盘映像 |
+|   hd   | 硬盘映像， hd=16 表示创建 16 MB 的磁盘映像 |
 | func   | create 表示创建映像 |
 | sectsize | 扇区大小 |
 | imgmode | 映像格式（flat 格式可方便我们使用 Hex Editor 查看） |
