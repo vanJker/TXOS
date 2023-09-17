@@ -108,7 +108,7 @@ bochs-run: $(IMG)
 
 .PHONY: bochs-debug
 bochs-debug: $(IMG)
-	bochs-gdb -q -f ./bochs/bochsrc-gdb -unlock
+	bochs-gdb -q -f ./bochs/bochsrc.gdb -unlock
 
 QEMU := qemu-system-i386
 # qemu 参数

@@ -127,7 +127,7 @@ bochs-run: $(IMG)
 # bochs 调试系统的规则
 .PHONY: bochs-debug
 bochs-debug: $(IMG)
-	bochs-gdb -q -f ./bochs/bochsrc-gdb -unlock
+	bochs-gdb -q -f ./bochs/bochsrc.gdb -unlock
 
 # qemu 系统模拟的架构为 i386
 QEMU := qemu-system-i386
