@@ -57,3 +57,46 @@ void mutex_release(mutex_t *mutex) {
     // 恢复为之前的中断状态
     set_irq_state(irq);
 }
+
+// 初始化互斥锁
+void mutexlock_init(mutexlock_t *lock) {
+    lock->holder = NULL;
+    mutex_init(&lock->mutex);
+    lock->repeat = 0;
+}
+
+// 持有锁
+void mutexlock_acquire(mutexlock_t *lock) {
+    task_t *current = current_task();
+
+    if (lock->holder != current) {
+        // 如果锁的持有者不是当前这个任务，则该任务尝试获持有锁
+        mutex_acquire(&lock->mutex);
+        // 当前任务成功持有锁
+        lock->holder = current;
+        assert(lock->repeat == 0);
+        lock->repeat = 1;
+    } else {
+        // 如果当前任务已经是锁的持有者，则只需更新锁的重入次数
+        lock->repeat++;
+    }
+}
+
+// 释放锁
+void mutexlock_release(mutexlock_t *lock) {
+    task_t *current = current_task();
+
+    // 只有锁的持有者才能释放锁
+    assert(current == lock->holder);
+
+    if (lock->repeat > 1) {
+        // 如果锁的重入次数大于 1，则表示已经进行了多次重入，只需更新重入次数
+        lock->repeat--;
+    } else {
+        // 如果锁的重入次数为 1，则需要释放锁
+        assert(lock->repeat == 1);
+        lock->holder = NULL;
+        lock->repeat = 0;
+        mutex_release(&lock->mutex);
+    }
+}
