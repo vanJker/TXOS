@@ -9,6 +9,8 @@
 - [安装 Gnome 图形界面 - bilibili][gnome-install]
 - [VMware 配置 Archlinux 自适应分辨率 - bilibili][arch-resolution]
 
+> 注：如果虚拟机出现明显卡顿的话，可以参考这篇文章 [<VMware 基本设置 - CSDN>][vmware-setting]。
+
 ## 2. VS Code
 
 - [安装 VScode - bilibili][vscode-install]
@@ -19,6 +21,8 @@
     - [C/C++][cpp-tools]
     - [Hex Editor][hex-editor]
     - [Git Lens][git-lens]
+
+> 注：如果在使用 VS Code 出现 **“试图写入的管道不存在”** 的报错，参考这篇文章 [<Vscode SSH连接远端出的“过程试图写入的管道不存在”解决办法 - CSDN>][vscode-ssh-03] 来解决。
 
 ## 3. NASM
 
@@ -235,10 +239,12 @@ com4: enabled=false
 [arch-install]: https://www.bilibili.com/video/BV1Pi4y1K7DS/?spm_id_from=333.999.0.0
 [gnome-install]: https://www.bilibili.com/video/BV1df4y147Cq/?spm_id_from=333.999.0.0
 [arch-resolution]: https://www.bilibili.com/video/BV1tZ4y1w7fR/?spm_id_from=333.999.0.0
+[vmware-setting]: https://blog.csdn.net/z609932088/article/details/128551628
 
 [vscode-install]: https://www.bilibili.com/video/BV1Yo4y1Z72E/?spm_id_from=333.999.0.0
 [vscode-ssh-01]: https://www.bilibili.com/video/BV1kQ4y1Z7ff/?spm_id_from=333.999.0.0
-[vscode-ssh-02]: https://zhuanlan.zhihu.com/p/652476986
+[vscode-ssh-02]: https://zhuanlan.zhihu.com/p/652476986o
+[vscode-ssh-03]: https://blog.csdn.net/weixin_48408892/article/details/129209615
 
 [asm-code-lens]: https://marketplace.visualstudio.com/items?itemName=maziac.asm-code-lens
 [cpp-tools]: https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools
