@@ -5,10 +5,17 @@ SRC	:= ./src
 # img 格式的目标磁盘映像
 IMG := $(TARGET)/master.img
 
+# iso 格式的内核镜像
+ISO := $(TARGET)/kernel.iso
+
+# grub 启动的配置文件
+GRUB_CFG := $(SRC)/utils/grub.cfg
+
 BOOT_BIN := $(TARGET)/bootloader/boot.bin
 LOADER_BIN := $(TARGET)/bootloader/loader.bin
 
-KERNEL_ENTRY := 0x10000
+MULTIBOOT2 := 0x10000
+KERNEL_ENTRY := 0x10040
 KERNEL_ELF := $(TARGET)/kernel.elf
 KERNEL_BIN := $(TARGET)/kernel.bin
 KERNEL_SYM := $(TARGET)/kernel.map
@@ -57,6 +64,7 @@ INCLUDE_FLAGS := -I $(SRC)/include
 LDFLAGS := -m elf_i386 \
 			-static \
 			-Ttext $(KERNEL_ENTRY) \
+			--section-start=.multiboot2=$(MULTIBOOT2) \
 
 
 $(TARGET)/bootloader/%.bin: $(SRC)/bootloader/%.asm
@@ -99,8 +107,18 @@ $(IMG): $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM)
 	dd if=$(KERNEL_BIN) of=$@ bs=512 count=200 seek=10 conv=notrunc
 
 
-.PHONY: build
-build: $(IMG)
+$(ISO): $(KERNEL_ELF) $(GRUB_CFG)
+# 检测内核目标文件是否合法
+	grub-file --is-x86-multiboot2 $<
+# 创建 iso 目录
+	mkdir -p $(TARGET)/iso/boot/grub
+# 拷贝内核目标文件
+	cp $< $(TARGET)/iso/boot
+# 拷贝 grub 配置文件
+	cp $(GRUB_CFG) $(TARGET)/iso/boot/grub
+# 生成 iso 格式的内核镜像
+	grub-mkrescue -o $@ $(TARGET)/iso
+
 
 .PHONY: bochs-run
 bochs-run: $(IMG)
@@ -110,22 +128,36 @@ bochs-run: $(IMG)
 bochs-debug: $(IMG)
 	bochs-gdb -q -f ./bochs/bochsrc.gdb -unlock
 
+.PHONY: bochs-grub
+bochs-grub: $(ISO)
+	bochs -q -f ./bochs/bochsrc.grub -unlock
+
+
 QEMU := qemu-system-i386
 # qemu 参数
 QFLAGS := -m 32M \
-			-boot c \
-			-drive file=$(IMG),if=ide,index=0,media=disk,format=raw \
 			-audiodev pa,id=hda \
 			-machine pcspk-audiodev=hda \
 			-rtc base=localtime \
 
+QEMU_DISK := -boot c \
+				-drive file=$(IMG),if=ide,index=0,media=disk,format=raw \
+
+QEMU_CDROM := -boot d \
+				-drive file=$(ISO),media=cdrom \
+
 .PHONY: qemu-run
 qemu-run: $(IMG)
-	$(QEMU) $(QFLAGS)
+	$(QEMU) $(QFLAGS) $(QEMU_DISK)
 
 .PHONY: qemu-debug
 qemu-debug: $(IMG)
-	$(QEMU) $(QFLAGS) -s -S
+	$(QEMU) $(QFLAGS) $(QEMU_DISK) -s -S
+
+.PHONY: qemu-grub
+qemu-grub: $(ISO)
+	$(QEMU) $(QFLAGS) $(QEMU_CDROM)
+
 
 VMDK := $(TARGET)/master.vmdk
 $(VMDK): $(IMG)
@@ -134,8 +166,12 @@ $(VMDK): $(IMG)
 .PHONY: vmdk
 vmdk: $(VMDK)
 
+
 .PHONY: all
 all: qemu-run
+
+.PHONY: build
+build: $(IMG) $(ISO)
 
 .PHONY: clean
 clean:

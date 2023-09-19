@@ -52,16 +52,16 @@ static kmm_t kmm = {
 };
 
 static void memory_map_init();
-extern u32 kernel_magic;
-extern u32 ards_addr;
+extern u32 magic;
+extern u32 addr;
 void memory_init() {
     u32 cnt;
     ards_t *ptr;
 
     // 如果是 onix loader 进入的内核
-    if (kernel_magic == XOS_MAGIC) {
-        cnt = *(u32 *)ards_addr;
-        ptr = (ards_t *)(ards_addr + 4);
+    if (magic == XOS_MAGIC) {
+        cnt = *(u32 *)addr;
+        ptr = (ards_t *)(addr + 4);
 
         for (size_t i = 0; i < cnt; i++, ptr++) {
             LOGK("ZONE %d:[base]0x%p,[size]:0x%p,[type]:%d\n",
@@ -75,7 +75,7 @@ void memory_init() {
             }
         }
     } else {
-        panic("Memory init magic unknown 0x%p\n", kernel_magic);
+        panic("Memory init magic unknown 0x%p\n", magic);
     }
 
     mm.free_pages = PAGE_IDX(mm.alloc_size);

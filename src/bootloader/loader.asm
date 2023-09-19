@@ -103,7 +103,7 @@ protected_mode:
     mov eax, 0x20230614  ; 内核魔数
     mov ebx, ards_cnt    ; 地址描述符地址
 
-    jmp 0x10000 ; 进入内核
+    jmp 0x10040 ; 进入内核
 
     ud2 ; 表示出错
 
