@@ -5,9 +5,17 @@
 #include <xos/stdlib.h>
 #include <xos/string.h>
 #include <xos/bitmap.h>
+#include <xos/multiboot2.h>
 
 #define ZONE_VALID    1 // ards 可用内存区域
 #define ZONE_RESERVED 2 // ards 不可用内存区域
+
+// 魔数 - bootloader 启动时为 XOS_MAGIC，multiboot2 启动时为 MULTIBOOT2_MAGIC
+extern u32 magic;
+// 地址 - bootloader 启动时为 ARDS 的起始地址，bootloader 启动时为 Boot Information 的起始地址
+extern u32 addr;
+
+static void memory_map_init();
 
 // 地址描述符
 typedef struct ards_t {
@@ -51,17 +59,13 @@ static kmm_t kmm = {
     .kernel_space_size = NELEM(KERNEL_PAGE_TABLE) * 1024 * PAGE_SIZE,
 };
 
-static void memory_map_init();
-extern u32 magic;
-extern u32 addr;
 void memory_init() {
     u32 cnt;
-    ards_t *ptr;
 
-    // 如果是 onix loader 进入的内核
     if (magic == XOS_MAGIC) {
+        // 如果是 XOS bootloader 进入的内核
         cnt = *(u32 *)addr;
-        ptr = (ards_t *)(addr + 4);
+        ards_t *ptr = (ards_t *)(addr + 4);
 
         for (size_t i = 0; i < cnt; i++, ptr++) {
             LOGK("ZONE %d:[base]0x%p,[size]:0x%p,[type]:%d\n",
@@ -73,6 +77,38 @@ void memory_init() {
                 mm.alloc_base = ptr->base;
                 mm.alloc_size = ptr->size;
             }
+        }
+    } else if (magic == MULTIBOOT2_MAGIC) {
+        // 如果是 multiboot2 进入的内核
+        u32 total_size = *(u32 *)addr;
+        multiboot2_tag_t *tag = (multiboot2_tag_t *)(addr + 8);
+
+        LOGK("Multiboot2 Information Size: 0x%p\n", total_size);
+
+        // 寻找类型为 mmap 的 tag
+        while (tag->type != MULTIBOOT2_TAG_TYPE_END) {
+            if (tag->type == MULTIBOOT2_TAG_TYPE_MAP) {
+                break;
+            }
+            // 需要填充，使得下一个 tag 以 8 字节对齐
+            tag = (multiboot2_tag_t *)(ROUND_UP((u32)tag + tag->size, 8));
+        }
+
+        multiboot2_tag_mmap_t *mmap_tag = (multiboot2_tag_mmap_t *)tag;
+        multiboot2_mmap_entry_t *entry = mmap_tag->entries;
+        cnt = 0;
+        while ((u32)entry < (u32)tag + tag->size) {
+            LOGK("ZONE %d:[base]0x%p,[size]:0x%p,[type]:%d\n",
+                 cnt++, (u32)entry->addr, (u32)entry->len, (u32)entry->type);
+            
+            if (entry->type == MULTIBOOT2_MEMORY_AVAILABLE
+                && entry->addr >= MEMORY_ALLOC_BASE
+                && entry->len > mm.alloc_size) {
+                mm.alloc_base = entry->addr;
+                mm.alloc_size = entry->len;
+            }
+
+            entry = (multiboot2_mmap_entry_t *)((u32)entry + mmap_tag->entry_size);
         }
     } else {
         panic("Memory init magic unknown 0x%p\n", magic);
