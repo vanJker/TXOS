@@ -106,6 +106,9 @@ $(IMG): $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM)
 # 将 kernel.bin 写入硬盘
 	dd if=$(KERNEL_BIN) of=$@ bs=512 count=200 seek=10 conv=notrunc
 
+.PHONY: img
+img: $(IMG)
+
 
 $(ISO): $(KERNEL_ELF) $(GRUB_CFG)
 # 检测内核目标文件是否合法
@@ -118,6 +121,9 @@ $(ISO): $(KERNEL_ELF) $(GRUB_CFG)
 	cp $(GRUB_CFG) $(TARGET)/iso/boot/grub
 # 生成 iso 格式的内核镜像
 	grub-mkrescue -o $@ $(TARGET)/iso
+
+.PHONY: iso
+iso: $(ISO)
 
 
 .PHONY: bochs-run

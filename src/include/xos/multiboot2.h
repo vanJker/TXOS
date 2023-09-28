@@ -7,8 +7,8 @@
 #define MULTIBOOT2_MAGIC 0x36d76289
 
 // multiboot2 tag 类型
-#define MULTIBOOT2_TAG_TYPE_END 0
-#define MULTIBOOT2_TAG_TYPE_MAP 6
+#define MULTIBOOT2_TAG_TYPE_END  0
+#define MULTIBOOT2_TAG_TYPE_MMAP 6
 
 // multiboot2 memory-map 的类型
 #define MULTIBOOT2_MEMORY_AVAILABLE 1

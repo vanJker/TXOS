@@ -200,7 +200,11 @@ void memory_init() {
 
         // 寻找类型为 mmap 的 tag
         while (tag->type != MULTIBOOT2_TAG_TYPE_END) {
-            if (tag->type == MULTIBOOT2_TAG_TYPE_MAP) {
+            if (tag->type == MULTIBOOT2_TAG_TYPE_END) {
+                // 如果到最后都没有找到 mmap 类型的 tag，则触发 panic 
+                panic("Memory init without mmap tag!!!\n");
+            }
+            if (tag->type == MULTIBOOT2_TAG_TYPE_MMAP) {
                 break;
             }
             // 需要填充，使得下一个 tag 以 8 字节对齐
