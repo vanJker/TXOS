@@ -173,7 +173,7 @@ extern syscall_table
 
 global syscall_entry
 syscall_entry:
-    xchg bx, bx ; BMB
+    ; xchg bx, bx ; BMB
 
     ; 验证系统调用号
     push eax
@@ -194,7 +194,7 @@ syscall_entry:
     ; 压入中断向量，保证栈结构符合 interrupt_exit 要求
     push 0x80
     
-    xchg bx, bx ; BMB
+    ; xchg bx, bx ; BMB
     
     ; 压入系统调用的参数
     push edx ; 第三个参数
@@ -204,7 +204,7 @@ syscall_entry:
     ; 调用系统调用对应的处理函数
     call [syscall_table + eax * 4]
 
-    xchg bx, bx ; BMB
+    ; xchg bx, bx ; BMB
     add esp, 3 * 4 ; 系统调用处理结束恢复栈
 
     ; 修改栈中的 eax 寄存器值，设置系统调用的返回值

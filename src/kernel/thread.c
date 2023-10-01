@@ -26,10 +26,10 @@ void init_thread() {
     u32 counter = 0;
 
     while (true) {
-        mutexlock_acquire(&lock);
-        LOGK("init task %d...\n", counter++);
-        mutexlock_release(&lock);
-        // sleep(500);
+        // mutexlock_acquire(&lock);
+        // LOGK("init task %d...\n", counter++);
+        // mutexlock_release(&lock);
+        sleep(500);
     }
 }
 
@@ -38,9 +38,9 @@ void test_thread() {
     u32 counter = 0;
 
     while (true) {
-        mutexlock_acquire(&lock);
-        LOGK("test task %d...\n", counter++);
-        mutexlock_release(&lock);
-        // sleep(800);
+        // mutexlock_acquire(&lock);
+        // LOGK("test task %d...\n", counter++);
+        // mutexlock_release(&lock);
+        sleep(800);
     }
 }
