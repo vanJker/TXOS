@@ -258,7 +258,7 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
             // 此时如果标志域表明不是左对齐
             if (!(flags & LEFT))
                 // 则该字段前面放入（宽度域值 - 1）个空格字符，然后再放入参数字符
-                while (--field_width)
+                while (--field_width > 0)
                     *str++ = ' ';
             
             // 然后放入参数字符
@@ -266,7 +266,7 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
 
             // 如果宽度域还大于 0，则表示有左对齐标志
             // 则在参数字符后面添加（宽度域值 - 1）个空格字符
-            while (--field_width)
+            while (--field_width > 0)
                 *str++ = ' ';
 
             break;

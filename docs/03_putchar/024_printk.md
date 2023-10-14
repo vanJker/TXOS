@@ -264,14 +264,53 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
 
 ---
 
-转换格式为字符串：
+**转换格式为字符：**
 
 ```c
-// 如果其超过了精度域值，则将字符串长度等于精度域值
-if (precision < 0)
-    precision = len;
-else
-    len = precision;
+// 如果转换指示符是 'c'，则表示对应参数应是字符
+case 'c':
+    // 此时如果标志域表明不是左对齐
+    if (!(flags & LEFT))
+        // 则该字段前面放入（宽度域值 - 1）个空格字符，然后再放入参数字符
+        while (--field_width > 0)
+            *str++ = ' ';
+            
+    // 然后放入参数字符
+    *str++ = (unsigned char)va_arg(args, int);
+
+    // 如果宽度域还大于 0，则表示有左对齐标志
+    // 则在参数字符后面添加（宽度域值 - 1）个空格字符
+    while (--field_width > 0)
+        *str++ = ' ';
+
+    break;
+```
+
+注意两个循环 `while (--field_width > 0)` 均显式说明了当 `--field_width > 0` 时才进行操作，这是保证，不会因为 `--field_width` 为负数而进入无限循环之中。
+
+这个显示保证是有意义的，因为在之前设置了 `field_width` 的值为 -1。
+
+```c
+// 取当前参数字段宽度域值，放入 field_wodth 变量中
+field_width = -1;
+```
+
+---
+
+**转换格式为字符串：**
+
+```c
+// 如果转换指示符是 's'，则表示对应参数是字符串
+case 's':
+    s = va_arg(args, char *);
+    // 首先取参数字符串的长度
+    len = strlen(s);
+    // 如果其超过了精度域值，则将字符串长度等于精度域值
+    if (precision < 0)
+        precision = len;
+    else
+        len = precision;
+    ...
 ```
 
 - `precision` 小于 0，表示之前并没有设置精度值，则置精度值等于字符串长度。
@@ -279,7 +318,7 @@ else
 
 ---
 
-非格式转换符：
+**非格式转换符：**
 
 ```c
 default:
