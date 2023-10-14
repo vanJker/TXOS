@@ -169,6 +169,55 @@ typedef struct multiboot2_mmap_entry_t {
 #define MULTIBOOT2_MEMORY_BADRAM    5
 ```
 
+> 注：结构体 `multiboot2_tag_mmap_t` 的最后一个成员 `entries` 是柔性数组。
+
+---
+
+在 C 语言中，柔性数组（flexible array）是一种特殊的数组形式，它允许在结构体的末尾定义一个长度可变的数组。柔性数组可以用于动态分配内存，并在结构体中保存不同长度的数据。
+
+要声明一个包含柔性数组的结构体，需要遵循以下规则：
+
+1. 柔性数组只能作为结构体的 **最后一个成员**，它不能有任何后续成员。
+2. 柔性数组本身不能被直接访问，只能通过指针来操作。
+3. 结构体中不能有任何其他的数组成员。
+4. 柔性数组长度为 0，形如 `data[]` 或 `data[0]`。
+
+下面是一个使用柔性数组的简单示例：
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+struct MyStruct {
+    int length;
+    int data[];  // 柔性数组
+};
+
+int main() {
+    int size = 5;
+    struct MyStruct* myStruct = malloc(sizeof(struct MyStruct) + size * sizeof(int));
+
+    myStruct->length = size;
+    for (int i = 0; i < size; i++) {
+        myStruct->data[i] = i;
+    }
+
+    printf("Length: %d\n", myStruct->length);
+    for (int i = 0; i < size; i++) {
+        printf("Data[%d]: %d\n", i, myStruct->data[i]);
+    }
+
+    free(myStruct);
+    return 0;
+}
+```
+
+在上面的示例中，我们定义了一个包含柔性数组的结构体 `MyStruct`。在 `main` 函数中，我们动态分配了足够的内存来容纳结构体和柔性数组的数据。然后，我们可以通过指针 `myStruct` 来访问和操作这个柔性数组。
+
+请注意，柔性数组在结构体内部没有分配实际的内存空间，而是通过结构体后续的内存来存储数据。因此，在动态分配内存时，我们需要使用 `sizeof(struct MyStruct) + size * sizeof(int)` 来确保为柔性数组分配足够的空间。
+
+柔性数组在处理变长数据时非常方便，但需要小心使用，避免越界访问和内存泄漏等问题。
+
 ### 3.4 memory_init
 
 在内存管理初始化中增加 multiboot2 引导启动时的逻辑：
