@@ -9,6 +9,9 @@
 // 将 x 以 k 为单位向上取整
 #define ROUND_UP(x, k) (((x) + (k)-1) & -(k))
 
+// 判断所给字符是否是字母（包括大小写）
+#define isAlpha(c) (((c) >= 'a') && ((c) <= 'z') || (((c) >= 'A') && ((c) <= 'Z')))
+
 // 阻塞 count 下
 void delay(u32 count);
 
