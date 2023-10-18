@@ -192,9 +192,8 @@ void task_init() {
 > 典型的问题如：任务再次进入 `mutex_acquire()` 或 `mutex_release()` 时，外中断响应状态是否仍然为禁止？因为第一次进入 `mutex_acquire()` 或 `mutex_release()` 时，是通过 **任务上下文切换** 到其它的任务执行的，没有涉及保存中断状态的操作。
 > 
 > 我们通过下面的流程来理解这个设计的正确性。
-> *** 
-> ![](./images/mutex_acquire_release.drawio.svg)
-> 
+
+![](./images/mutex_acquire_release.drawio.svg)
 
 ---
 
