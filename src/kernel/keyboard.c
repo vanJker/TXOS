@@ -5,10 +5,16 @@
 #include <xos/types.h>
 #include <xos/stdlib.h>
 
+static void keyboard_set_leds();
+
 #define KEYBOARD_DATA_PORT 0x60 // 键盘的数据端口
 #define KEYBOARD_CTRL_PORT 0x64 // 键盘的状态/控制端口
 
-#define INV 0 // 不可见字符
+#define KEYBOARD_CMD_LED    0xED // 设置 LED 状态
+#define KEYBOARD_CMD_ACK    0xFA // ACK 上一条命令
+#define KEYBOARD_CMD_RESEND 0xFE // 重传上一条命令（一般是上一条命令发生了错误）
+
+#define INV 0        // 不可见字符
 #define EXTCODE 0xe0 // 扩展码字节
 
 // 第一套键盘扫描码
@@ -225,6 +231,51 @@ void keyboard_new(keyboard_t *keyboard) {
     keyboard->ctrl     = false;
     keyboard->alt      = false;
     keyboard->shift    = false;
+    keyboard_set_leds();
+}
+
+// 等待键盘的输出缓冲区为满
+static void keyboard_output_wait() {
+    u8 state;
+    do {
+        state = inb(KEYBOARD_CTRL_PORT);
+    } while (!(state & 0x01));
+}
+
+// 等待键盘的输入缓冲区为空
+static void keyboard_input_wait() {
+    u8 state;
+    do {
+        state = inb(KEYBOARD_CTRL_PORT);
+    } while (state & 0x02);
+}
+
+// 等待直到键盘返回对上一条命令的处理结果
+static u8 keyboard_cmd_respond() {
+    keyboard_output_wait();
+    return inb(KEYBOARD_DATA_PORT);
+}
+
+// 设置键盘的 LED 灯
+static void keyboard_set_leds() {
+    u8 leds = (keyboard.capslock << 2) | (keyboard.numlock << 1) | keyboard.scrlock;
+    u8 state;
+    
+    // 设置 LED 命令
+    do {
+        keyboard_input_wait();
+        outb(KEYBOARD_DATA_PORT, KEYBOARD_CMD_LED);
+        state = keyboard_cmd_respond();
+    } while (state == KEYBOARD_CMD_RESEND);
+    assert(state == KEYBOARD_CMD_ACK); // 保证命令被 ACK
+
+    // 设置 LED 状态
+    do {
+        keyboard_input_wait();
+        outb(KEYBOARD_DATA_PORT, leds);
+        state = keyboard_cmd_respond();
+    } while (state == KEYBOARD_CMD_RESEND);
+    keyboard_input_wait(); // 保证数据被成功输入
 }
 
 // 键盘中断处理函数
@@ -236,6 +287,7 @@ void keyboard_handler(int vector) {
     send_eoi(vector);
 
     // 从键盘的数据端口读取按键信息的扫描码
+    keyboard_output_wait();
     u16 scan_code = inb(KEYBOARD_DATA_PORT);
     size_t ext_state = 0; // 按键的状态索引，默认不是扩展码
 
@@ -284,6 +336,9 @@ void keyboard_handler(int vector) {
         led = true;
     }
 
+    // 至少一个 LED 灯状态发送变化
+    if (led) keyboard_set_leds();
+
     // 设置 Ctrl, Alt, Shift 按键状态
     keyboard.ctrl  = keymap[KEY_CTRL_L].key_state[0]  || keymap[KEY_CTRL_L].key_state[1];
     keyboard.alt   = keymap[KEY_ALT_L].key_state[0]   || keymap[KEY_ALT_L].key_state[1];
@@ -302,8 +357,13 @@ void keyboard_handler(int vector) {
     // 获取按键对应的 ASCII 码
     char ch;
     // [/?] 这个键比较特殊，只有这个键的扩展码和普通码一样，会显示字符。其它键的扩展码都是不可见字符，比如 KEY_PAD-1
-    if (ext_state && (make_code != KEY_SLASH)) {
-        ch = keymap[make_code].keycap[ext_state];
+    // 但是这个键的扩展码只会显示字符 '/'（无论是否与 shift 组合）
+    if (ext_state) {
+        if (make_code == KEY_SLASH) {
+            ch = keymap[make_code].keycap[0];
+        } else {
+            ch = keymap[make_code].keycap[ext_state];
+        }
     } else {
         ch = keymap[make_code].keycap[shift];
     }
