@@ -238,11 +238,17 @@ void keyboard_handler(int vector) {
     // 获取按键对应的 ASCII 码
     char ch;
     // [/?] 这个键比较特殊，只有这个键的扩展码和普通码一样，会显示字符。其它键的扩展码都是不可见字符，比如 KEY_PAD-1
-    if (ext_state && (make_code != KEY_SLASH)) {
-        ch = keymap[make_code].keycap[ext_state];
+    // 但是这个键的扩展码只会显示字符 '/'（无论是否与 shift 组合）
+    if (ext_state) {
+        if (make_code == KEY_SLASH) {
+            ch = keymap[make_code].keycap[0];
+        } else {
+            ch = keymap[make_code].keycap[ext_state];
+        }
     } else {
         ch = keymap[make_code].keycap[shift];
     }
+
 
     // 如果是不可见字符，则直接返回
     if (ch == INV) return;
@@ -277,6 +283,23 @@ void keyboard_handler(int vector) {
 其中需要注意的是，键盘管理器中，`capslock`，`numlock`，`scrlock` 按键是切换键，即按下表示进行状态的切换。而 `shift`，`ctrl`，`alt` 并不是切换键，即按下，或者抬起这个动作就表示进行状态的切换。
 
 而在具体实现中，键盘管理器中的 `capslock`，`numlock`，`scrlock` 成员只有在按下按键时才会切换状态（抬起按键时，即是断码时会直接返回）。而键盘管理器中的 `shift`，`ctrl`，`alt` 成员则是通过查询 `keymap` 中的对应按键的状态来实现，这样在按键按下 / 抬起时，都会切换状态。
+
+---
+
+在获取按键对应的 ASCII 码时需要注意 [/?] 这个键，它比较特殊，只有这个键的扩展码和普通码一样，会显示字符。
+
+其它键的扩展码都是不可见字符，比如 KEY_PAD-1，小键盘数字 1 的扩展码是不可见字符。
+
+```c
+[KEY_PAD_1] = {{'1', INV}, {false, false}},
+```
+
+但是 [/?] 扩展码还有一个特殊的地方，它和小键盘上的 [*] 键一样，无论配不配合 Shift 键，它的 ASCII 码都是 [/]。
+
+```c
+[KEY_STAR] = {{'*', '*'}, {false, false}},
+```
+
 
 ### 4.5 初始化键盘中断
 

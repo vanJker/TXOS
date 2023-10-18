@@ -357,8 +357,13 @@ void keyboard_handler(int vector) {
     // 获取按键对应的 ASCII 码
     char ch;
     // [/?] 这个键比较特殊，只有这个键的扩展码和普通码一样，会显示字符。其它键的扩展码都是不可见字符，比如 KEY_PAD-1
-    if (ext_state && (make_code != KEY_SLASH)) {
-        ch = keymap[make_code].keycap[ext_state];
+    // 但是这个键的扩展码只会显示字符 '/'（无论是否与 shift 组合）
+    if (ext_state) {
+        if (make_code == KEY_SLASH) {
+            ch = keymap[make_code].keycap[0];
+        } else {
+            ch = keymap[make_code].keycap[ext_state];
+        }
     } else {
         ch = keymap[make_code].keycap[shift];
     }
