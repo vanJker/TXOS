@@ -85,6 +85,10 @@ makepkg -si
 
 等待编译安装结束即可。
 
+> 注：如果报错没有 `sdl.h`，执行命令 `sudo pacman -S sdl`（在执行该命令之前，最好执行一下 `sudo pacman -Sy` 来同步一下源）。
+
+> 注：如果同步源失败，说明正在使用的源失效了，修改 `/etc/pacman.d/mirrorlist`，切换至其它可用的源。
+
 ## 2. 配置 bochs-gdb
 
 在 VS Code 中键入 `Ctrl + Shift + P` 进入命令面板，在里面键入 `File: Compare Active File With`，`Enter` 进入，再次键入与当前活动文本要对比的文件名称，在本例中，为 `bochsrc` 与 `bochsrc-gdb` 进行对比。
