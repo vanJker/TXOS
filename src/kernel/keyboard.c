@@ -4,6 +4,9 @@
 #include <xos/debug.h>
 #include <xos/types.h>
 #include <xos/stdlib.h>
+#include <xos/mutex.h>
+#include <xos/task.h>
+#include <xos/fifo.h>
 
 static void keyboard_set_leds();
 
@@ -16,6 +19,8 @@ static void keyboard_set_leds();
 
 #define INV 0        // 不可见字符
 #define EXTCODE 0xe0 // 扩展码字节
+
+#define BUFFER_SIZE 64 // 环形缓冲区大小
 
 // 第一套键盘扫描码
 typedef enum key_t {
@@ -218,6 +223,12 @@ typedef struct keyboard_t {
     bool ctrl;      // Ctrl 键状态
     bool alt;       // Alt 键状态
     bool shift;     // Shift 键状态
+
+    /**** 环形缓冲区 ****/
+    mutexlock_t lock;   // 环形缓冲区的锁
+    fifo_t fifo;        // 循环队列
+    u8 buf[BUFFER_SIZE];// 输入缓冲区
+    task_t *waiter;     // 等待键盘输入的任务 
 } keyboard_t;
 // 键盘管理器
 static keyboard_t keyboard;
@@ -232,6 +243,10 @@ void keyboard_new(keyboard_t *keyboard) {
     keyboard->alt      = false;
     keyboard->shift    = false;
     keyboard_set_leds();
+
+    mutexlock_init(&keyboard->lock);
+    fifo_init(&keyboard->fifo, keyboard->buf, BUFFER_SIZE);
+    keyboard->waiter = NULL;
 }
 
 // 等待键盘的输出缓冲区为满
@@ -371,10 +386,31 @@ void keyboard_handler(int vector) {
     // 如果是不可见字符，则直接返回
     if (ch == INV) return;
 
-    // 否则的话，就打印按键组合对应的字符
-    LOGK("press key %c\n", ch);
+    // 否则的话，就将按键组合对应的字符加入键盘的环形缓冲区
+    fifo_put(&keyboard.fifo, ch);
+    if (keyboard.waiter) {
+        // 如果有任务在等待键盘输入
+        task_unblock(keyboard.waiter);
+        keyboard.waiter = NULL;
+    }
 
     return;
+}
+
+// 从键盘的环形缓冲区读取字符到指定缓冲区，并返回读取字符的个数
+size_t keyboard_read(char *buf, size_t count) {
+    mutexlock_acquire(&keyboard.lock);
+    int i = 0;
+    while (i < count) {
+        while (fifo_empty(&keyboard.fifo)) {
+            // 如果当前键盘环形缓冲区为空，则阻塞当前任务为等待状态
+            keyboard.waiter = current_task();
+            task_block(keyboard.waiter, NULL, TASK_WAITING);
+        }
+        buf[i++] = fifo_get(&keyboard.fifo);
+    }
+    mutexlock_release(&keyboard.lock);
+    return i;
 }
 
 // 初始化键盘中断
