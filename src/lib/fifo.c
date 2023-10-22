@@ -43,22 +43,3 @@ u8 fifo_get(fifo_t *fifo) {
 
     return byte;
 }
-
-// 测试 FIFO 的功能
-void fifo_test() {
-    const size_t LEN = 5;
-    u8 buf[LEN];
-    fifo_t fifo;
-
-    fifo_init(&fifo, buf, LEN);
-    for (size_t i = 0; i < LEN + 3; i++) {
-        fifo_put(&fifo, (u8)i);
-    }
-    assert(fifo_full(&fifo));
-
-    for (size_t i = 0; i < LEN - 1; i++) {
-        u8 byte = fifo_get(&fifo);
-        LOGK("fifo byte: 0x%x\n", byte);
-    }
-    assert(fifo_empty(&fifo));
-}

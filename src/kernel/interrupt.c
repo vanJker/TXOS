@@ -4,6 +4,7 @@
 #include <xos/stdlib.h>
 #include <xos/io.h>
 #include <xos/assert.h>
+#include <xos/global.h>
 
 #define EXCEPTION_SIZE 0x20 // 异常数量
 #define ENTRY_SIZE     0x30 // 中断入口数量

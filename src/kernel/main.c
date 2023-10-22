@@ -11,11 +11,12 @@ extern void kernel_map_init();
 extern void task_init();
 extern void syscall_init();
 extern void keyboard_init();
-extern void fifo_test();
+extern void tss_init();
 
 void kernel_init() {
     console_init();
     gdt_init();
+    tss_init();
     memory_init();
     kernel_map_init();
     interrupt_init();
@@ -25,7 +26,6 @@ void kernel_init() {
     // rtc_init();
     task_init();
     syscall_init();
-    // fifo_test();
 
     irq_enable(); // 打开外中断响应
 
