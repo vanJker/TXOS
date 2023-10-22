@@ -41,9 +41,9 @@ typedef struct descriptor /* 共 8 个字节 */
 } __attribute__((packed)) descriptor;
 ```
 
-#### 1.2.1 type segment
+#### 1.2.1 type (segment = 1)
 
-仅当描述符的 type 部分为 1 时，才按以下格式布置。
+仅当描述符的 segment 部分为 1 时，`type` 部分才按以下格式布置。
 
 `| X | C/E | R/W | A |`
 
