@@ -79,4 +79,7 @@ void task_sleep(u32 ms);
 // 唤醒任务
 void task_wakeup();
 
+// 切换到用户模式
+void task_to_user_mode(target_t target);
+
 #endif

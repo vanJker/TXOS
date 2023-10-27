@@ -45,6 +45,39 @@ typedef struct gate_t /* 共 8 个字节 */
     u16 offset_high;    // 段内偏移 16 ~ 31 位
 } _packed gate_t;
 
+// 中断帧（在低特权级发生中断）
+typedef struct intr_frame_t {
+    // 中断向量号
+    u32 vector;
+
+    // 通用寄存器
+    u32 edi;
+    u32 esi;
+    u32 ebp;
+    u32 esp; // 虽然 pusha 会把 esp 也压入，但是 esp 在不断变化，所以在 popa 时被忽略
+    u32 ebx;
+    u32 edx;
+    u32 ecx;
+    u32 eax;
+
+    // 段寄存器
+    u32 gs;
+    u32 fs;
+    u32 es;
+    u32 ds;
+
+    // 错误码和中断向量号
+    u32 vector0;
+    u32 error; // 错误码或魔数（用于填充）
+
+    // 中断压入
+    u32 eip;
+    u32 cs;
+    u32 eflags;
+    u32 esp3; // 低特权级（一般是 ring 3）的栈段选择子
+    u32 ss3;  // 低特权级（一般是 ring 3）的栈顶指针
+} intr_frame_t;
+
 // 中断处理函数
 typedef void *handler_t;
 

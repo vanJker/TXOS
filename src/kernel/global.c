@@ -57,7 +57,6 @@ void gdt_init() {
     gdt_ptr.limit = sizeof(gdt) - 1;
 
     asm volatile("lgdt gdt_ptr");
-    BMB;    // BMB 1
 }
 
 // 初始化任务状态段（TSS）及其描述符
@@ -79,8 +78,6 @@ void tss_init() {
     desc->present = 1;      // 位于内存
     desc->DPL = 0;          // 内核权级（用于任务门或调用门）
     desc->type = 0b1001;    // 32 位可用 TSS
-    BMB;    // BMB 2
 
     asm volatile("ltr %%ax\n"::"a"(KERNEL_TSS_SELECTOR));
-    BMB;    // BMB 3
 }

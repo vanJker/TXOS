@@ -3,6 +3,7 @@
 #include <xos/debug.h>
 #include <xos/mutex.h>
 #include <xos/printk.h>
+#include <xos/task.h>
 
 // 空闲任务 idle
 void idle_thread() {
@@ -21,21 +22,19 @@ void idle_thread() {
 
 mutexlock_t lock;
 
-extern size_t keyboard_read(char *buf, size_t count);
+// extern size_t keyboard_read(char *buf, size_t count);
+
+static void real_init_thread() {
+    while (true) {
+        // asm volatile("xchgw %bx, %bx");
+        // asm volatile("in $0x92, %ax");
+        sleep(100);
+    }
+}
 
 // 初始化任务 init
 void init_thread() {
-    irq_enable();
-    u32 counter = 0;
-
-    char ch;
-    while (true) {
-        u32 irq = irq_disable();
-        keyboard_read(&ch, 1);
-        printk("%c", ch);
-        set_irq_state(irq);
-        // sleep(500);
-    }
+    task_to_user_mode((target_t)real_init_thread);
 }
 
 void test_thread() {

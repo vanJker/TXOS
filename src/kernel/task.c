@@ -7,10 +7,12 @@
 #include <xos/string.h>
 #include <xos/syscall.h>
 #include <xos/stdlib.h>
+#include <xos/global.h>
 
 extern void task_switch(task_t *next);
 extern u32 volatile jiffies;
 extern const u32 jiffy;
+extern tss_t tss;
 
 // 任务队列
 static task_t *task_queue[NUM_TASKS];
@@ -75,6 +77,17 @@ task_t *current_task() {
     );
 }
 
+// 将 tss 的 esp0 激活为所给任务的内核栈顶
+// 如果下一个任务是用户态的任务，需要将 tss 的栈顶位置修改为该任务对应的内核栈顶
+void task_tss_activate(task_t *task) {
+    assert(task->magic == XOS_MAGIC);   // 检测栈溢出
+    
+    if (task->uid != KERNEL_TASK) {
+        // 如果任务不是内核任务
+        tss.esp0 = (u32)task + PAGE_SIZE;
+    }
+}
+
 // 任务调度
 void schedule() {
     // 在中断门中使用了该函数（系统调用 yield）
@@ -99,6 +112,8 @@ void schedule() {
     if (next == current) { // 如果下一个任务还是当前任务，则无需进行上下文切换
         return;
     }
+
+    task_tss_activate(next);
 
     task_switch(next);
 }
@@ -251,6 +266,60 @@ void task_wakeup() {
         // task->ticks = 0;
         task_unblock(task);
     }
+}
+
+// 切换到用户模式的任务执行
+// 注意：该函数只能在函数体末尾被调用，因为它会修改栈内容，从而影响调用函数中局部变量的使用，而且这个函数不会返回。
+static void real_task_to_user_mode(target_t target) {
+    task_t *current = current_task();
+
+    // 内核栈的最高有效地址
+    u32 addr = (u32)current + PAGE_SIZE;
+
+    // 在内核栈中构造中断帧（低特权级发生中断）
+    addr -= sizeof(intr_frame_t);
+    intr_frame_t *iframe = (intr_frame_t *)addr;
+
+    iframe->vector = 0x20;
+
+    iframe->edi = 1;
+    iframe->esi = 2;
+    iframe->ebp = 3;
+    iframe->esp = 4;
+    iframe->ebx = 5;
+    iframe->edx = 6;
+    iframe->ecx = 7;
+    iframe->eax = 8;
+
+    iframe->gs = 0;
+    iframe->fs = USER_DATA_SELECTOR;
+    iframe->es = USER_DATA_SELECTOR;
+    iframe->ds = USER_DATA_SELECTOR;
+
+    iframe->vector0 = iframe->vector;
+    iframe->error = 0x20231024; // 魔数
+
+    iframe->eip = (u32)target;
+    iframe->cs = USER_CODE_SELECTOR;
+    iframe->eflags = (0 << 12 | 1 << 9 | 1 << 1); // 非 NT | IOPL = 0 | 中断使能
+
+    u32 stack3 = kalloc(1); // 用户栈 TODO: use user alloc instead
+    iframe->ss3 = USER_DATA_SELECTOR;
+    iframe->esp3 = stack3 + PAGE_SIZE; // 栈从高地址向低地址生长
+
+    asm volatile(
+        "movl %0, %%esp\n"
+        "jmp interrupt_exit\n"
+        ::"m"(iframe)
+    );
+}
+
+// 切换到用户模式
+// 本函数用于为 real_task_to_user_mode() 准备足够的栈空间，以方便 real.. 函数使用局部变量。
+// 注意：该函数只能在函数体末尾被调用，因为该函数也不会返回。
+void task_to_user_mode(target_t target) {
+    u8 temp[100]; // sizeof(intr_frame_t) == 80，所以至少准备 80 个字节的栈空间。
+    real_task_to_user_mode(target);
 }
 
 #include <xos/mutex.h>
