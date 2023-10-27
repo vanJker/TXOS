@@ -57,11 +57,13 @@ static void keyboard_input_wait() {
 void keyboard_handler(int vector) {
     ...
     // 从键盘的数据端口读取按键信息的扫描码
-    keyboard_output_wait();
+    // keyboard_output_wait();
     u16 scan_code = inb(KEYBOARD_DATA_PORT);
     ...
 }
 ```
+
+> **Update (2023/10/27)：使用 `keyboard_out_wait()` 会导致系统启动时触发键盘中断，并不断等待键盘的输出缓冲区满，进而导致系统卡死，所以暂时不使用这个函数。**
 
 ### 2.2 Command
 
@@ -78,7 +80,7 @@ void keyboard_handler(int vector) {
 ```c
 // 等待直到键盘返回对上一条命令的处理结果
 static u8 keyboard_cmd_respond() {
-    keyboard_output_wait();
+    // keyboard_output_wait();
     return inb(KEYBOARD_DATA_PORT);
 }
 ```

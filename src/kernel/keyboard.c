@@ -267,7 +267,7 @@ static void keyboard_input_wait() {
 
 // 等待直到键盘返回对上一条命令的处理结果
 static u8 keyboard_cmd_respond() {
-    keyboard_output_wait();
+    // keyboard_output_wait();
     return inb(KEYBOARD_DATA_PORT);
 }
 
@@ -302,7 +302,7 @@ void keyboard_handler(int vector) {
     send_eoi(vector);
 
     // 从键盘的数据端口读取按键信息的扫描码
-    keyboard_output_wait();
+    // keyboard_output_wait();
     u16 scan_code = inb(KEYBOARD_DATA_PORT);
     size_t ext_state = 0; // 按键的状态索引，默认不是扩展码
 
