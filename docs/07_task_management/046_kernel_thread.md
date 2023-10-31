@@ -114,7 +114,7 @@ static task_t *task_queue[NUM_TASKS];
 static task_t *get_free_task() {
     for (size_t i = 0; i < NUM_TASKS; i++) {
         if (task_queue[i] == NULL) {
-            task_queue[i] = (task_t *)kalloc(1);
+            task_queue[i] = (task_t *)kalloc_pages(1);
             return task_queue[i];
         }
     }

@@ -127,7 +127,7 @@ static void real_task_to_user_mode(target_t target) {
     iframe->cs = USER_CODE_SELECTOR;
     iframe->eflags = (0 << 12 | 1 << 9 | 1 << 1); // 非 NT | IOPL = 0 | 中断使能
 
-    u32 stack3 = kalloc(1); // 用户栈 TODO: use user alloc instead
+    u32 stack3 = kalloc_pages(1); // 用户栈 TODO: use user alloc instead
     iframe->ss3 = USER_DATA_SELECTOR;
     iframe->esp3 = stack3 + PAGE_SIZE; // 栈从高地址向低地址生长
 
@@ -145,7 +145,7 @@ static void real_task_to_user_mode(target_t target) {
 
 我们虚拟低特权级任务的通用寄存器的值，为了后续调试、测试的便利，我们将它们设置为一些简单的数值。
 
-同时任务需要一个用户栈，我们目前使用 `kalloc()` 来分配了一页作为任务的用户态栈。当然这里应该使用用户空间的内存分配方法来进行分配，这个我们后续会进行实现。
+同时任务需要一个用户栈，我们目前使用 `kalloc_pages()` 来分配了一页作为任务的用户态栈。当然这里应该使用用户空间的内存分配方法来进行分配，这个我们后续会进行实现。
 
 最后将 `esp` 设置为中断帧的位置，然后通过 `interrupt_exit` 来进行中断上下文的恢复，以及中断返回。
 

@@ -30,7 +30,7 @@ static task_t *idle_task;
 static task_t *get_free_task() {
     for (size_t i = 0; i < NUM_TASKS; i++) {
         if (task_queue[i] == NULL) {
-            task_queue[i] = (task_t *)kalloc(1);
+            task_queue[i] = (task_t *)kalloc_pages(1);
             return task_queue[i];
         }
     }
@@ -303,7 +303,7 @@ static void real_task_to_user_mode(target_t target) {
     iframe->cs = USER_CODE_SELECTOR;
     iframe->eflags = (0 << 12 | 1 << 9 | 1 << 1); // 非 NT | IOPL = 0 | 中断使能
 
-    u32 stack3 = kalloc(1); // 用户栈 TODO: use user alloc instead
+    u32 stack3 = kalloc_pages(1); // 用户栈 TODO: use user alloc instead
     iframe->ss3 = USER_DATA_SELECTOR;
     iframe->esp3 = stack3 + PAGE_SIZE; // 栈从高地址向低地址生长
 
