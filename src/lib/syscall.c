@@ -22,6 +22,28 @@ static _inline u32 _syscall1(u32 sys_num, u32 arg) {
     return ret;
 }
 
+// _syscall2 表示封装有 2 个参数的系统调用
+static _inline u32 _syscall2(u32 sys_num, u32 arg1, u32 arg2) {
+    u32 ret;
+    asm volatile(
+        "int $0x80\n"
+        : "=a"(ret)
+        : "a"(sys_num), "b"(arg1), "c"(arg2)
+    );
+    return ret;
+}
+
+// _syscall3 表示封装有 3 个参数的系统调用
+static _inline u32 _syscall3(u32 sys_num, u32 arg1, u32 arg2, u32 arg3) {
+    u32 ret;
+    asm volatile(
+        "int $0x80\n"
+        : "=a"(ret)
+        : "a"(sys_num), "b"(arg1), "c"(arg2), "d"(arg3)
+    );
+    return ret;
+}
+
 u32 test() {
     return _syscall0(SYS_TEST);
 }
@@ -32,4 +54,8 @@ void yield() {
 
 void sleep(u32 ms) {
     _syscall1(SYS_SLEEP, ms);
+}
+
+i32 write(fd_t fd, char *buf, size_t len) {
+    return _syscall3(SYS_WRITE, fd, (u32)buf, len);
 }

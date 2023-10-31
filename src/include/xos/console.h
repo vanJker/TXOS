@@ -14,6 +14,6 @@
 
 void console_init();  // 初始化 console
 void console_clear(); // 清空 console
-void console_write(char *buf, size_t count, u8 attr); // 向 console 当前光标处以 attr 样式写入一个字节序列
+i32 console_write(char *buf, size_t count, u8 attr); // 向 console 当前光标处以 attr 样式写入一个字节序列
 
 #endif

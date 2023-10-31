@@ -4,6 +4,7 @@
 #include <xos/mutex.h>
 #include <xos/printk.h>
 #include <xos/task.h>
+#include <xos/stdio.h>
 
 // 空闲任务 idle
 void idle_thread() {
@@ -25,10 +26,14 @@ mutexlock_t lock;
 // extern size_t keyboard_read(char *buf, size_t count);
 
 static void real_init_thread() {
+    size_t counter = 0;
+
     while (true) {
         // asm volatile("xchgw %bx, %bx");
         // asm volatile("in $0x92, %ax");
         sleep(100);
+        // printk("task in user mode cann't use printk!\n");
+        printf("task in user mode can use printf! %d\n", counter++);
     }
 }
 

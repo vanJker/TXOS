@@ -3,6 +3,7 @@
 #include <xos/task.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
+#include <xos/console.h>
 
 // 系统调用处理函数列表
 handler_t syscall_table[SYSCALL_SIZE];
@@ -48,6 +49,16 @@ static void sys_sleep(u32 ms) {
     task_sleep(ms);
 }
 
+// 系统调用 write 的处理函数
+static i32 sys_write(fd_t fd, char *buf, size_t len) {
+    if (fd == STDOUT || fd == STDERR) {
+        return console_write(buf, len, TEXT);
+    }
+    // TODO:
+    panic("unimplement write!!!");
+    return 0;
+}
+
 // 初始化系统调用
 void syscall_init() {
     for (size_t i = 0; i < SYSCALL_SIZE; i++) {
@@ -57,4 +68,5 @@ void syscall_init() {
     syscall_table[SYS_TEST]  = sys_test;
     syscall_table[SYS_SLEEP] = sys_sleep;
     syscall_table[SYS_YIELD] = sys_yield;
+    syscall_table[SYS_WRITE] = sys_write;
 }

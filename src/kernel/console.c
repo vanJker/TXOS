@@ -148,7 +148,9 @@ static void command_del(console_t *c) {
 }
 
 // 向 console 当前光标处以 attr 样式写入一个字节序列
-void console_write(char *buf, size_t count, u8 attr) {
+i32 console_write(char *buf, size_t count, u8 attr) {
+    i32 ret = count;
+
     u32 irq = irq_disable();
 
     char ch;
@@ -203,6 +205,8 @@ void console_write(char *buf, size_t count, u8 attr) {
     set_cursor_addr(&console);
 
     set_irq_state(irq);
+
+    return ret;
 }
 
 // 清空 console

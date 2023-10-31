@@ -42,4 +42,13 @@ typedef unsigned long long u64;
 typedef float  f32;
 typedef double f64;
 
+// 文件描述符
+typedef i32 fd_t;
+// 系统保留文件描述符
+typedef enum std_fd_t {
+    STDIN,  // 标准输入 - 0
+    STDOUT, // 标准输出 - 1
+    STDERR, // 标准错误 - 2
+} std_fd_t;
+
 #endif
