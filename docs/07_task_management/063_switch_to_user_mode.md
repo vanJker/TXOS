@@ -220,18 +220,18 @@ void schedule() {
 
 ### 6.1 测试框架
 
-在 `kernel/thread.c` 中给任务 `init` 增加用户线程 `real_init_thread`：
+在 `kernel/thread.c` 中给任务 `init` 增加用户线程 `user_init_thread`：
 
 ```c
 // 初始化任务 init（用户线程）
-static void real_init_thread() {
+static void user_init_thread() {
     while (true) {
     }
 }
 
 // 初始化任务 init（内核线程）
 void init_thread() {
-    task_to_user_mode((target_t)real_init_thread);
+    task_to_user_mode((target_t)user_init_thread);
 }
 ```
 
@@ -243,10 +243,10 @@ void init_thread() {
 
 ### 6.3 段寄存器
 
-在用户线程 `real_init_thread()` 部分加入 `BMB` 断点，并使用 Bochs 进行测试。
+在用户线程 `user_init_thread()` 部分加入 `BMB` 断点，并使用 Bochs 进行测试。
 
 ```c
-static void real_init_thread() {
+static void user_init_thread() {
     while (true) {
         asm volatile("xchgw %bx, %bx");
     }
@@ -259,10 +259,10 @@ static void real_init_thread() {
 
 ### 6.4 I/O 指令
 
-在用户线程 `real_init_thread()` 部分尝试使用 I/O 指令：
+在用户线程 `user_init_thread()` 部分尝试使用 I/O 指令：
 
 ```c
-static void real_init_thread() {
+static void user_init_thread() {
     while (true) {
         asm volatile("in $0x92, %ax");
     }
@@ -276,7 +276,7 @@ static void real_init_thread() {
 由于系统调用和中断处理，共用入口逻辑和结束逻辑，所以系统调用机制可以正常运行。在 `syscall_entry` 处打断点，观察系统调用过程中，栈帧的变化。
 
 ```c
-static void real_init_thread() {
+static void user_init_thread() {
     while (true) {
         sleep(100);
     }

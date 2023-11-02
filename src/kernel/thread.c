@@ -25,7 +25,7 @@ mutexlock_t lock;
 
 // extern size_t keyboard_read(char *buf, size_t count);
 
-static void real_init_thread() {
+static void user_init_thread() {
     size_t counter = 0;
 
     while (true) {
@@ -39,7 +39,7 @@ static void real_init_thread() {
 
 // 初始化任务 init
 void init_thread() {
-    task_to_user_mode((target_t)real_init_thread);
+    task_to_user_mode((target_t)user_init_thread);
 }
 
 void test_thread() {
