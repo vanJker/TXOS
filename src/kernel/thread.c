@@ -5,6 +5,7 @@
 #include <xos/printk.h>
 #include <xos/task.h>
 #include <xos/stdio.h>
+#include <xos/arena.h>
 
 // 空闲任务 idle
 void idle_thread() {
@@ -23,8 +24,6 @@ void idle_thread() {
 
 mutexlock_t lock;
 
-// extern size_t keyboard_read(char *buf, size_t count);
-
 static void user_init_thread() {
     size_t counter = 0;
 
@@ -33,7 +32,7 @@ static void user_init_thread() {
         // asm volatile("in $0x92, %ax");
         sleep(100);
         // printk("task in user mode cann't use printk!\n");
-        printf("task in user mode can use printf! %d\n", counter++);
+        // printf("task in user mode can use printf! %d\n", counter++);
     }
 }
 
@@ -46,10 +45,19 @@ void test_thread() {
     irq_enable();
     u32 counter = 0;
 
+    void *ptr1 = kmalloc(1280);
+    LOGK("kmalloc 0x%p...\n", ptr1);
+
+    void *ptr2 = kmalloc(1024);
+    LOGK("kmalloc 0x%p...\n", ptr2);
+
+    void *ptr3 = kmalloc(54);
+    LOGK("kmalloc 0x%p...\n", ptr3);
+
+    kfree(ptr2);
+    kfree(ptr1);
+    kfree(ptr3);
+
     while (true) {
-        // mutexlock_acquire(&lock);
-        // LOGK("test task %d...\n", counter++);
-        // mutexlock_release(&lock);
-        sleep(800);
     }
 }
