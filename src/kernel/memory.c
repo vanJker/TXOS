@@ -252,7 +252,7 @@ void kernel_map_init() {
         page_entry_init(pde, PAGE_IDX(kpage_table));
         memset(kpage_table, 0, PAGE_SIZE); // 清空当前的内核页表
 
-        // 恒等映射前 1024 个页，即前 4MB 内存空间
+        // 每次恒等映射 1024 个页，即 4MB 内存空间
         for (idx_t pte_idx = 0; pte_idx < PAGE_ENTRY_SIZE; pte_idx++, index++) {
             // 第 0 页不进行映射，这样使用空指针访问时，会触发缺页异常
             if (index == 0) continue;

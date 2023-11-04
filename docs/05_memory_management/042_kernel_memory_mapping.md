@@ -168,7 +168,7 @@ void memory_init() {
 
 ### 3.5 内核空间映射
 
-将物理内存的前 8M 进行恒等映射，作为内核的地址空间。
+将物理内存的前 8M 进行恒等映射，作为内核的地址空间（注意需要将前 8M 内存，在物理内存数组当中，进行占用标记）。
 
 > **第 0 页不进行映射，这样当使用空指针（地址为 0）访问时，会触发缺页异常。**
 
@@ -187,7 +187,7 @@ void kernel_map_init() {
         page_entry_init(pde, PAGE_IDX(kpage_table));
         memset(kpage_table, 0, PAGE_SIZE); // 清空当前的内核页表
 
-        // 恒等映射前 1024 个页，即前 4MB 内存空间
+        // 每次恒等映射 1024 个页，即 4MB 内存空间
         for (idx_t pte_idx = 0; pte_idx < PAGE_ENTRY_SIZE; pte_idx++, index++) {
             // 第 0 页不进行映射，这样使用空指针访问时，会触发缺页异常
             if (index == 0) continue;
