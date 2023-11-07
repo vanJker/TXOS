@@ -4,6 +4,7 @@
 #include <xos/assert.h>
 #include <xos/debug.h>
 #include <xos/console.h>
+#include <xos/memory.h>
 
 // 系统调用处理函数列表
 handler_t syscall_table[SYSCALL_SIZE];
@@ -26,15 +27,23 @@ static task_t *task = NULL; // 当前阻塞任务
 static u32 sys_test() {
     // LOGK("syscall test...\n");
 
-    if (task == NULL) { // 如果当前没有任务被阻塞，则阻塞当前任务
-        task = current_task();
-        // LOGK("block task 0x%p\n", task);
-        task_block(task, NULL, TASK_BLOCKED);
-    } else {            // 否则结束阻塞当前的阻塞任务
-        task_unblock(task);
-        // LOGK("unblock task 0x%p\n", task);
-        task = NULL;
-    }
+    u32 vaddr = 0x1600000;
+    char *ptr;
+    BMB;
+
+    // ptr = (char *)vaddr;
+    // ptr[3] = 'T';
+    // BMB;
+
+    link_page(vaddr);
+    BMB;    
+
+    ptr = (char *)vaddr;
+    ptr[3] = 'T';
+    BMB;
+
+    unlink_page(vaddr);
+    BMB;
 
     return 255;
 }
