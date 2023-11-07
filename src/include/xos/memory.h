@@ -59,10 +59,10 @@ u32 get_cr3();
 void set_cr3(u32 pde);
 
 // 分配 count 个连续的内核页
-u32 kalloc_pages(u32 count);
+u32 kalloc_page(u32 count);
 
 // 释放 count 个连续的内核页
-void kfree_pages(u32 vaddr, u32 count);
+void kfree_page(u32 vaddr, u32 count);
 
 // 内核页目录的物理地址
 u32 get_kernel_page_dir();

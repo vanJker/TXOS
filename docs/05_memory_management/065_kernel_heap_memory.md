@@ -6,10 +6,10 @@
 
 ```c
 // 分配 count 个连续的内核页
-u32 kalloc_pages(u32 count);
+u32 kalloc_page(u32 count);
 
 // 释放 count 个连续的内核页
-void kfree_pages(u32 vaddr, u32 count);
+void kfree_page(u32 vaddr, u32 count);
 ```
 
 所以本节我们在之前以页为单位的分配 / 释放机制的基础上，来实现更小粒度的内存分配 / 释放机制。
@@ -171,7 +171,7 @@ void *kmalloc(size_t size) {
         size_t count = div_round_up(asize, PAGE_SIZE);
 
         // 分配所需内存，以及清除原有的数据
-        arena = (arena_t *)kalloc_pages(count);
+        arena = (arena_t *)kalloc_page(count);
         memset(arena, 0, count * PAGE_SIZE);
         
         // 设置 arena 内存结构说明
@@ -200,7 +200,7 @@ void *kmalloc(size_t size) {
     // 如果该内存块描述符对应的空闲块链队列为空
     if (list_empty(&desc->free_list)) {
         // 分配一页内存，以及清除原有的数据
-        arena = (arena_t *)kalloc_pages(1);
+        arena = (arena_t *)kalloc_page(1);
         memset(arena, 0, PAGE_SIZE);
 
         // 设置 arena 内存结构说明
@@ -253,7 +253,7 @@ void kfree(void *ptr) {
 
     // 如果是超大块（即 large = 1）
     if (arena->large) {
-        kfree_pages((u32)arena, arena->count);
+        kfree_page((u32)arena, arena->count);
         return;
     }
 
@@ -271,7 +271,7 @@ void kfree(void *ptr) {
             assert(!list_contains(&arena->desc->free_list, block));
         }
 
-        kfree_pages((u32)arena, 1);
+        kfree_page((u32)arena, 1);
     }
 }
 ```

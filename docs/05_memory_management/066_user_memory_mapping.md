@@ -117,7 +117,7 @@ static void real_task_to_user_mode(target_t target) {
 
     // 设置用户性能内存位图
     current->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t)); // TODO: kfree()
-    u8 *buf = (u8 *)kalloc_pages(1); // TODO: kfree_pages()
+    u8 *buf = (u8 *)kalloc_page(1); // TODO: kfree_page()
     bitmap_init(current->vmap, buf, PAGE_SIZE, KERNEL_MEMORY_SIZE / PAGE_SIZE);
     ...
 }
@@ -125,7 +125,7 @@ static void real_task_to_user_mode(target_t target) {
 
 - 用户虚拟内存位图的有效起始索引为 $2^{23} / 2^{12} = 2^{11} = 2048$，这是因为前 $8M$ 虚拟内存是内核的恒等映射，用户无需判断这些虚拟页的有效性（这部分是由内核负责的）。
 
-> 注：因为使用了内存分配机制，例如 `kmalloc()` 和 `kalloc_pages()`，所以在后续实现结束任务时需要释放这些内存。
+> 注：因为使用了内存分配机制，例如 `kmalloc()` 和 `kalloc_page()`，所以在后续实现结束任务时需要释放这些内存。
 
 ### 2.5 建立映射
 
