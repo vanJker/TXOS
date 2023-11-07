@@ -226,7 +226,7 @@ void kernel_init() {
 }
 ```
 
-在 `lib/list.c` 处实现测试函数（由于目前只有 `kalloc_pages()` 和 `kfree_pages()` 具备在虚拟内存空间中，分配和释放内存的能力，所以我们引入 `memory.h` 来使用）：
+在 `lib/list.c` 处实现测试函数（由于目前只有 `kalloc_page()` 和 `kfree_page()` 具备在虚拟内存空间中，分配和释放内存的能力，所以我们引入 `memory.h` 来使用）：
 
 ```c
 /***** 测试链表 *****/
@@ -243,36 +243,36 @@ void list_test() {
 
     count = 3;
     while (count--) {
-        node = (list_node_t *)kalloc_pages(1);        // should be 0x105000, 0x106000, 0x107000
+        node = (list_node_t *)kalloc_page(1);        // should be 0x105000, 0x106000, 0x107000
         list_push_front(list, node);
     }
     LOGK("list size: %d\n", list_size(list));   // should be 3
     while (!list_empty(list)) {
         node = list_pop_front(list);            // should be 0x107000, 0x106000, 0x105000
-        kfree_pages((u32)node, 1);
+        kfree_page((u32)node, 1);
     }
     LOGK("list size: %d\n", list_size(list));   // should be 0
 
     count = 3;
     while (count--) {
-        node = (list_node_t *)kalloc_pages(1);        // should be 0x105000, 0x106000, 0x107000
+        node = (list_node_t *)kalloc_page(1);        // should be 0x105000, 0x106000, 0x107000
         list_push_back(list, node);
     }
     LOGK("list size: %d\n", list_size(list));   // should be 3
     while (!list_empty(list)) {
         node = list_pop_back(list);             // should be 0x107000, 0x106000, 0x105000
-        kfree_pages((u32)node, 1);
+        kfree_page((u32)node, 1);
     }
     LOGK("list size: %d\n", list_size(list));   // should be 0
 
-    node = (list_node_t *)kalloc_pages(1);            // should be 0x105000
+    node = (list_node_t *)kalloc_page(1);            // should be 0x105000
     list_push_back(list, node);
 
     LOGK("contains node 0x%p --> %d\n", node, list_contains(list, node));   // should be 1
     LOGK("contains node 0x%p --> %d\n", NULL, list_contains(list, NULL));   // should be 0
 
     list_remove(node);
-    kfree_pages((u32)node, 1);                        // should be 0x105000
+    kfree_page((u32)node, 1);                        // should be 0x105000
 }
 ```
 

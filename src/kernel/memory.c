@@ -345,7 +345,7 @@ static void reset_pages(bitmap_t *map, u32 addr, u32 count) {
 }
 
 // 分配 count 个连续的内核页
-u32 kalloc_pages(u32 count) {
+u32 kalloc_page(u32 count) {
     assert(count > 0);
     u32 vaddr = scan_pages(&kmm.kernel_vmap, count);
     LOGK("ALLOC kernel pages 0x%p count %d\n", vaddr, count);
@@ -353,7 +353,7 @@ u32 kalloc_pages(u32 count) {
 }
 
 // 释放 count 个连续的内核页
-void kfree_pages(u32 vaddr, u32 count) {
+void kfree_page(u32 vaddr, u32 count) {
     ASSERT_PAGE_ADDR(vaddr);
     assert(count > 0);
     reset_pages(&kmm.kernel_vmap, vaddr, count);

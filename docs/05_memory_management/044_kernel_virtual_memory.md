@@ -14,10 +14,10 @@
 
 ```c
 // 分配 count 个连续的内核页
-u32 kalloc_pages(u32 count);
+u32 kalloc_page(u32 count);
 
 // 释放 count 个连续的内核页
-void kfree_pages(u32 vaddr, u32 count);
+void kfree_page(u32 vaddr, u32 count);
 ```
 
 ## 3. 代码分析
@@ -78,7 +78,7 @@ static u32 scan_pages(bitmap_t *map, u32 count) {
 }
 
 // 分配 count 个连续的内核页
-u32 kalloc_pages(u32 count) {
+u32 kalloc_page(u32 count) {
     assert(count > 0);
     u32 vaddr = scan_pages(&kmm.kernel_vmap, count);
     LOGK("ALLOC kernel pages 0x%p count %d\n", vaddr, count);
@@ -102,7 +102,7 @@ static void reset_pages(bitmap_t *map, u32 addr, u32 count) {
 }
 
 // 释放 count 个连续的内核页
-void kfree_pages(u32 vaddr, u32 count) {
+void kfree_page(u32 vaddr, u32 count) {
     ASSERT_PAGE_ADDR(vaddr);
     assert(count > 0);
     reset_pages(&kmm.kernel_vmap, vaddr, count);
@@ -110,7 +110,7 @@ void kfree_pages(u32 vaddr, u32 count) {
 }
 ```
 
-> **`scan_pages()` 和 `reset_pages()` 后续也可以用于用户虚拟内存空间的分配和释放（这也是为什么将它们与 `kalloc_pages()` 和 `kfree_pages()` 分离的原因）。**
+> **`scan_pages()` 和 `reset_pages()` 后续也可以用于用户虚拟内存空间的分配和释放（这也是为什么将它们与 `kalloc_page()` 和 `kfree_page()` 分离的原因）。**
 
 ## 4. 功能测试
 
@@ -131,12 +131,12 @@ void memory_test() {
 
     // 分配内核页
     for (size_t i = 0; i < count; i++) {
-        kpages[i] = kalloc_pages(1);
+        kpages[i] = kalloc_page(1);
     }
 
     // 释放内核页
     for (size_t i = 0; i < count; i++) {
-        kfree_pages(kpages[i], 1);
+        kfree_page(kpages[i], 1);
     }
 }
 ```
