@@ -6,6 +6,7 @@
 #include <xos/string.h>
 #include <xos/bitmap.h>
 #include <xos/multiboot2.h>
+#include <xos/task.h>
 
 #define ZONE_VALID    1 // ards 可用内存区域
 #define ZONE_RESERVED 2 // ards 不可用内存区域
@@ -284,15 +285,30 @@ static void kernel_vmap_init() {
     bitmap_init(&kmm.kernel_vmap, bits, size, mm.start_page_idx);
 }
 
-// 获取内核页目录
+// 获取页目录
 static page_entry_t *get_pde() {
     // return (page_entry_t *)kmm.kernel_page_dir;
     return (page_entry_t *)(0xfffff000);
 }
 
-// 获取 vaddr 所在的内核页表
-static page_entry_t *get_pte(u32 vaddr) {
+// 获取虚拟内存 vaddr 所在的页表
+static page_entry_t *get_pte(u32 vaddr, bool create) {
     // return (page_entry_t *)kmm.kernel_page_table[PDE_IDX(vaddr)];
+    // 获取对应的 pde
+    page_entry_t *pde = get_pde();
+    size_t idx = PDE_IDX(vaddr);
+    page_entry_t *entry = &pde[idx];
+
+    // 没 create 选项的话，必须保证 vaddr 对应的页表是有效的
+    assert(create || (!create && entry->present));
+
+    // 如果设置了 create 且 vaddr 对应的页表无效，则分配页作为页表
+    if (!entry->present && create) {
+        LOGK("Get and create a page table for 0x%p\n", vaddr);
+        u32 paddr = alloc_page();
+        page_entry_init(entry, PAGE_IDX(paddr));
+    }
+
     return (page_entry_t *)(0xffc00000 | (PDE_IDX(vaddr) << 12));
 }
 
@@ -342,6 +358,70 @@ void kfree_pages(u32 vaddr, u32 count) {
     assert(count > 0);
     reset_pages(&kmm.kernel_vmap, vaddr, count);
     LOGK("FREE kernel pages 0x%p count %d\n", vaddr, count);
+}
+
+// 将虚拟地址 vaddr 映射到物理内存
+void link_page(u32 vaddr) {
+    ASSERT_PAGE_ADDR(vaddr); // 保证是页的起始地址
+
+    // 获取对应的 pte
+    page_entry_t *pte = get_pte(vaddr, true);
+    size_t idx = PTE_IDX(vaddr);
+    page_entry_t *entry = &pte[idx];
+
+    // 获取用户虚拟内存位图，以及 vaddr 对应的页索引
+    task_t *current = current_task();
+    bitmap_t *vmap = current->vmap;
+    idx = PAGE_IDX(vaddr);
+
+    // 如果页面已存在映射关系，则直接返回
+    if (entry->present) {
+        assert(bitmap_contains(vmap, idx));
+        return;
+    }
+
+    // 否则分配物理内存页，并在页表中进行映射
+    assert(!bitmap_contains(vmap, idx));
+    bitmap_insert(vmap, idx); // 在用户虚拟内存位图中标记存在映射关系
+
+    u32 paddr = alloc_page();
+    page_entry_init(entry, PAGE_IDX(paddr));
+    flush_tlb(vaddr); // 更新页表后，需要刷新 TLB
+
+    LOGK("LINK from 0x%p to 0x%p\n", vaddr, paddr);
+}
+
+// 取消虚拟地址 vaddr 对应的物理内存映射
+void unlink_page(u32 vaddr) {
+    ASSERT_PAGE_ADDR(vaddr); // 保证是页的起始地址
+
+    // 获取对应的 pte
+    page_entry_t *pte = get_pte(vaddr, true);
+    size_t idx = PTE_IDX(vaddr);
+    page_entry_t *entry = &pte[idx];
+
+    // 获取用户虚拟内存位图，以及 vaddr 对应的页索引
+    task_t *current = current_task();
+    bitmap_t *vmap = current->vmap;
+    idx = PAGE_IDX(vaddr);
+
+
+    // 如果页面不存在映射关系，则直接返回
+    if (!entry->present) {
+        assert(!bitmap_contains(vmap, idx));
+        return;
+    }
+
+    // 否则取消映射，并释放对应的物理内存页
+    assert(bitmap_contains(vmap, idx));
+    bitmap_remove(vmap, idx); // 在用户虚拟内存位图中标记不存在映射关系
+
+    entry->present = 0;
+    u32 paddr = PTE2PA(*entry);
+    free_page(paddr);
+    flush_tlb(vaddr); // 更新页表后，需要刷新 TLB
+
+    LOGK("UNLINK from 0x%p to 0x%p\n", vaddr, paddr);
 }
 
 // 内核页目录的物理地址

@@ -4,8 +4,10 @@
 #include <xos/types.h>
 #include <xos/bitmap.h>
 
-#define PAGE_SIZE   0x1000 // 页大小为 4K
-#define MEMORY_ALLOC_BASE 0x100000 // 32 位可用内存起始地址为 1M
+#define PAGE_SIZE 0x1000 // 页大小为 4K
+#define MEMORY_ALLOC_BASE   0x100000    // 32 位可用内存起始地址为 1M
+#define KERNEL_MEMORY_SIZE  0x800000    // 内核占用的内存大小
+#define USER_MEMORY_TOP     0x8800000   // 用户虚拟内存的最高地址 136M
 
 // 获取 addr 的页索引
 #define PAGE_IDX(addr) ((u32)addr >> 12) 
@@ -21,6 +23,9 @@
 
 // 获取 addr 的页表索引
 #define PTE_IDX(addr) (((u32)addr >> 12) & 0x3ff)
+
+// 将 PTE 转换成 PA
+#define PTE2PA(pte) PAGE_ADDR((pte).index)
 
 // 索引类型（页索引 / 页目录向索引 / 页表项索引）
 typedef u32 idx_t;
@@ -65,5 +70,10 @@ u32 get_kernel_page_dir();
 // 内核虚拟内存位图
 bitmap_t *get_kernel_vmap();
 
+// 将虚拟地址 vaddr 起始的页映射到物理内存
+void link_page(u32 vaddr);
+
+// 取消虚拟地址 vaddr 起始的页对应的物理内存映射
+void unlink_page(u32 vaddr);
 
 #endif

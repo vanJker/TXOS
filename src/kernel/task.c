@@ -8,6 +8,7 @@
 #include <xos/syscall.h>
 #include <xos/stdlib.h>
 #include <xos/global.h>
+#include <xos/arena.h>
 
 extern void task_switch(task_t *next);
 extern u32 volatile jiffies;
@@ -272,6 +273,11 @@ void task_wakeup() {
 // 注意：该函数只能在函数体末尾被调用，因为它会修改栈内容，从而影响调用函数中局部变量的使用，而且这个函数不会返回。
 static void real_task_to_user_mode(target_t target) {
     task_t *current = current_task();
+
+    // 设置用户性能内存位图
+    current->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t)); // TODO: kfree()
+    u8 *buf = (u8 *)kalloc_pages(1); // TODO: kfree_pages()
+    bitmap_init(current->vmap, buf, PAGE_SIZE, KERNEL_MEMORY_SIZE / PAGE_SIZE);
 
     // 内核栈的最高有效地址
     u32 addr = (u32)current + PAGE_SIZE;
