@@ -115,7 +115,7 @@ typedef struct task_t {
 static void real_task_to_user_mode(target_t target) {
     task_t *current = current_task();
 
-    // 设置用户性能内存位图
+    // 设置用户虚拟内存位图
     current->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t)); // TODO: kfree()
     u8 *buf = (u8 *)kalloc_page(1); // TODO: kfree_page()
     bitmap_init(current->vmap, buf, PAGE_SIZE, KERNEL_MEMORY_SIZE / PAGE_SIZE);
@@ -213,7 +213,7 @@ void unlink_page(u32 vaddr) {
 
 > 注意
 > ---
-> 这里只是将对应的物理内存页取消了映射，并没有取消页表所在页的映射，这是因为运行的**局部性原理**！以及页目录和全部页表占用的内存空间并不大。
+> 这里只是将对应的物理内存页取消了映射，并没有取消页表所在页的映射，这是因为运行的**局部性原理**，以及页目录和全部页表占用的内存空间并不大，可以保留。
 
 ## 3. 功能测试
 
@@ -281,3 +281,9 @@ static u32 sys_test() {
 - 在 BMB 1 处，查看页表是否建立了新的映射（两个新映射：所在页表和虚拟页的映射）
 - 在 BMB 2 处，不会触发缺页异常，并查看虚拟地址 `0x1600000` 处的数据是否写入 `T`
 - 在 BMB 3 处，查看页表是否取消了相应的映射（只取消了虚拟页的映射，并没有取消所在页表的映射）
+
+## 4. FAQ
+
+> **在本节的代码分析没有看到切换页表的逻辑，所以都是在内核页表中建立映射和取消映射？那么不同用户进程映射的页岂不是可以被互相访问？这不符合隔离性。**
+> ***
+> 是的，这一节我们并没有实现页表切换，也确实会造成隔离性问题。我们会在下一节实现页目录拷贝和页表切换功能，这样就可以解决所说的问题了。

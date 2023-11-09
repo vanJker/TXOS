@@ -209,6 +209,11 @@ static void free_page(u32 addr) {
     LOGK("Free page 0x%p\n", addr);
 }
 
+u32 get_cr2() {
+    // 根据函数调用约定，将 cr2 的值复制到 eax 作为返回值
+    asm volatile("movl %cr2, %eax");
+}
+
 u32 get_cr3() {
     // 根据函数调用约定，将 cr3 的值复制到 eax 作为返回值
     asm volatile("movl %cr3, %eax");
@@ -422,6 +427,19 @@ void unlink_page(u32 vaddr) {
     flush_tlb(vaddr); // 更新页表后，需要刷新 TLB
 
     LOGK("UNLINK from 0x%p to 0x%p\n", vaddr, paddr);
+}
+
+// 拷贝当前任务的页目录
+page_entry_t *copy_pde() {
+    task_t *current = current_task();
+    page_entry_t *pde = (page_entry_t *)kalloc_page(1); // TODO: free
+    memcpy((void *)pde, (void *)current->page_dir, PAGE_SIZE);
+
+    // 将最后一个页表项指向页目录自身，方便修改页目录和页表
+    page_entry_t *entry = &pde[1023];
+    page_entry_init(entry, PAGE_IDX(pde));
+
+    return pde;
 }
 
 // 内核页目录的物理地址
