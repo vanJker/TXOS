@@ -9,6 +9,10 @@
 #define KERNEL_MEMORY_SIZE  0x800000    // 内核占用的内存大小
 #define USER_MEMORY_TOP     0x8800000   // 用户虚拟内存的最高地址 136M
 
+#define USER_STACK_TOP  USER_MEMORY_TOP // 用户栈顶地址 136M
+#define USER_STACK_SIZE 0xa00000        // 用户栈大小 10M
+#define USER_STACK_BOOTOM (USER_MEMORY_TOP - USER_STACK_SIZE) // 用户栈底地址（136M - 8M）
+
 // 获取 addr 的页索引
 #define PAGE_IDX(addr) ((u32)addr >> 12) 
 
@@ -52,6 +56,9 @@ void memory_init();
 
 void kernel_map_init();
 
+// 获取 cr2 寄存器的值
+u32 get_cr2();
+
 // 获取 cr3 寄存器的值
 u32 get_cr3();
 
@@ -63,6 +70,9 @@ u32 kalloc_page(u32 count);
 
 // 释放 count 个连续的内核页
 void kfree_page(u32 vaddr, u32 count);
+
+// 拷贝当前任务的页目录
+page_entry_t *copy_pde();
 
 // 内核页目录的物理地址
 u32 get_kernel_page_dir();

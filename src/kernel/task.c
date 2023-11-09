@@ -78,13 +78,17 @@ task_t *current_task() {
     );
 }
 
-// 将 tss 的 esp0 激活为所给任务的内核栈顶
-// 如果下一个任务是用户态的任务，需要将 tss 的栈顶位置修改为该任务对应的内核栈顶
-void task_tss_activate(task_t *task) {
+// 任务激活，在切换到下一个任务之前必须对该任务进行一些激活操作
+void task_activate(task_t *task) {
     assert(task->magic == XOS_MAGIC);   // 检测栈溢出
+
+    // 如果下一个任务的页表与当前任务的页表不同，则切换页表
+    if (task->page_dir != get_cr3()) {
+        set_cr3(task->page_dir);
+    }
     
+    // 如果下一个任务是用户态的任务，需要将 tss 的栈顶位置修改为该任务对应的内核栈顶
     if (task->uid != KERNEL_TASK) {
-        // 如果任务不是内核任务
         tss.esp0 = (u32)task + PAGE_SIZE;
     }
 }
@@ -114,7 +118,7 @@ void schedule() {
         return;
     }
 
-    task_tss_activate(next);
+    task_activate(next);
 
     task_switch(next);
 }
@@ -274,10 +278,14 @@ void task_wakeup() {
 static void real_task_to_user_mode(target_t target) {
     task_t *current = current_task();
 
-    // 设置用户性能内存位图
+    // 设置用户虚拟内存位图
     current->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t)); // TODO: kfree()
     u8 *buf = (u8 *)kalloc_page(1); // TODO: kfree_page()
     bitmap_init(current->vmap, buf, PAGE_SIZE, KERNEL_MEMORY_SIZE / PAGE_SIZE);
+
+    // 设置用户任务/进程页表
+    current->page_dir = (u32)copy_pde();
+    set_cr3(current->page_dir);
 
     // 内核栈的最高有效地址
     u32 addr = (u32)current + PAGE_SIZE;
@@ -309,9 +317,8 @@ static void real_task_to_user_mode(target_t target) {
     iframe->cs = USER_CODE_SELECTOR;
     iframe->eflags = (0 << 12 | 1 << 9 | 1 << 1); // 非 NT | IOPL = 0 | 中断使能
 
-    u32 stack3 = kalloc_page(1); // 用户栈 TODO: use user alloc instead
     iframe->ss3 = USER_DATA_SELECTOR;
-    iframe->esp3 = stack3 + PAGE_SIZE; // 栈从高地址向低地址生长
+    iframe->esp3 = USER_STACK_TOP;
 
     asm volatile(
         "movl %0, %%esp\n"

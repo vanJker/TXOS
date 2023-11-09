@@ -78,6 +78,20 @@ typedef struct intr_frame_t {
     u32 ss3;  // 低特权级（一般是 ring 3）的栈顶指针
 } intr_frame_t;
 
+// Page Fault 缺页异常的错误码
+typedef struct page_error_code_t {
+    u8 present : 1;
+    u8 write : 1;
+    u8 user : 1;
+    u8 rsvd : 1;
+    u8 fetch : 1;
+    u8 protection : 1;
+    u8 shadow : 1;
+    u8 reserved0;
+    u8 sgx : 1;
+    u16 reserved1;
+} _packed page_error_code_t;
+
 // 中断处理函数
 typedef void *handler_t;
 

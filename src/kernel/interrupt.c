@@ -5,6 +5,8 @@
 #include <xos/io.h>
 #include <xos/assert.h>
 #include <xos/global.h>
+#include <xos/memory.h>
+#include <xos/task.h>
 
 #define EXCEPTION_SIZE 0x20 // 异常数量
 #define ENTRY_SIZE     0x30 // 中断入口数量
@@ -53,7 +55,8 @@ void exception_handler(
     u32 edi, u32 esi, u32 ebp, u32 esp,
     u32 ebx, u32 edx, u32 ecx, u32 eax,
     u32 gs, u32 fs, u32 es, u32 ds,
-    u32 vector0, u32 error, u32 eip, u32 cs, u32 eflags) {
+    u32 vector0, u32 error, u32 eip, u32 cs, u32 eflags
+) {
     char *message = NULL;
     if (vector < 0x16) {
         message = messages[vector];
@@ -72,6 +75,37 @@ void exception_handler(
 
     // 阻塞
     hang();
+}
+
+// 缺页异常处理函数
+void page_fault_handler(
+    int vector,
+    u32 edi, u32 esi, u32 ebp, u32 esp,
+    u32 ebx, u32 edx, u32 ecx, u32 eax,
+    u32 gs, u32 fs, u32 es, u32 ds,
+    u32 vector0, u32 error, u32 eip, u32 cs, u32 eflags
+) {
+    assert(vector == 0xe); // 缺页异常中断向量号
+
+    u32 vaddr = get_cr2(); // 获取触发缺页异常的虚拟地址
+    LOGK("Page fault address 0x%p\n", vaddr);
+
+    // 前 8M 为恒等映射，不可能触发缺页异常
+    assert(KERNEL_MEMORY_SIZE <= vaddr && vaddr < USER_STACK_TOP);
+    
+    // 缺页异常错误码
+    page_error_code_t *page_error = (page_error_code_t *)&error;
+
+    // 如果缺页异常发生在用户栈范围内
+    if (!page_error->present && page_error->user 
+        && (vaddr > USER_STACK_BOOTOM)
+    ) {
+        u32 vpage = PAGE_ADDR(PAGE_IDX(vaddr));
+        link_page(vpage);
+        return;
+    }
+
+    panic("Page Fault!!!");
 }
 
 void send_eoi(int vector) {
@@ -221,6 +255,7 @@ void idt_init() {
     for (size_t i = 0; i < EXCEPTION_SIZE; i++) {
         handler_table[i] = exception_handler;
     }
+    handler_table[0xe] = page_fault_handler; // 注册缺页异常处理函数
 
     // 初始化外中断处理函数表
     for (size_t i = 0x20; i < ENTRY_SIZE; i++) {
