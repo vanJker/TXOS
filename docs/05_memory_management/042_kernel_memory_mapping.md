@@ -194,6 +194,8 @@ void kernel_map_init() {
 
             page_entry_t *pte = &kpage_table[pte_idx];
             page_entry_init(pte, index);
+
+            if (mm.memory_map[index] == 0) mm.free_pages--;
             mm.memory_map[index] = 1; // 设置物理内存数组，该页被占用
         }
     }

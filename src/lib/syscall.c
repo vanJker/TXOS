@@ -57,5 +57,9 @@ void sleep(u32 ms) {
 }
 
 i32 write(fd_t fd, char *buf, size_t len) {
-    return _syscall3(SYS_WRITE, fd, (u32)buf, len);
+    return _syscall3(SYS_WRITE, (u32)fd, (u32)buf, (u32)len);
+}
+
+i32 brk(void *addr) {
+    return _syscall1(SYS_BRK, (u32)addr);
 }

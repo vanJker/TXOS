@@ -86,4 +86,9 @@ void link_page(u32 vaddr);
 // 取消虚拟地址 vaddr 起始的页对应的物理内存映射
 void unlink_page(u32 vaddr);
 
+
+/*** 实现的系统调用处理 ***/
+
+i32 sys_brk(void *addr);
+
 #endif
