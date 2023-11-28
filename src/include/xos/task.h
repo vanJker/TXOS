@@ -43,6 +43,7 @@ typedef struct task_t {
     u32 uid;                    // 用户 ID
     u32 page_dir;               // 页目录的物理地址
     bitmap_t *vmap;             // 任务虚拟内存位图
+    u32 brk;                    // 任务堆内存最高地址
     u32 magic;                  // 内核魔数（用于检测栈溢出）
 } task_t;
 

@@ -22,19 +22,27 @@ void idle_thread() {
     }
 }
 
-mutexlock_t lock;
-
-void test_recursion() {
-    char temp[0x1000]; // 每次占用 4096 Bytes
-    test_recursion();
-}
+#define UBMB asm volatile("xchgw %bx, %bx");
 
 static void user_init_thread() {
     size_t counter = 0;
 
     while (true) {
-        printf("task in user mode can use printf! %d\n", counter++);
-        test_recursion();
+        // printf("task in user mode can use printf! %d\n", counter++);
+        char *ptr;
+        
+        ptr = (char *)0x900000;
+        brk(ptr);
+        UBMB
+
+        ptr -= 0x1000;
+        ptr[3] = 'T';
+        UBMB
+
+        ptr = (char *)0x800000;
+        brk(ptr);
+        UBMB
+
         sleep(1000);
     }
 }

@@ -96,9 +96,11 @@ void page_fault_handler(
     // 缺页异常错误码
     page_error_code_t *page_error = (page_error_code_t *)&error;
 
-    // 如果缺页异常发生在用户栈范围内
+    task_t *current = current_task();
+
+    // 如果缺页异常发生在用户栈或用户堆范围内
     if (!page_error->present && page_error->user 
-        && (vaddr > USER_STACK_BOOTOM)
+        && (vaddr < current->brk || vaddr > USER_STACK_BOOTOM)
     ) {
         u32 vpage = PAGE_ADDR(PAGE_IDX(vaddr));
         link_page(vpage);

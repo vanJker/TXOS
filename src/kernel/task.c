@@ -147,6 +147,7 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
     task->uid = uid;
     task->page_dir = get_kernel_page_dir();
     task->vmap = get_kernel_vmap();
+    task->brk = KERNEL_MEMORY_SIZE;
     task->magic = XOS_MAGIC;
 
     return task;
@@ -335,17 +336,14 @@ void task_to_user_mode(target_t target) {
     real_task_to_user_mode(target);
 }
 
-#include <xos/mutex.h>
 extern void idle_thread();
 extern void init_thread();
 extern void test_thread();
-extern mutexlock_t lock;
 
 // 初始化任务管理
 void task_init() {
     list_init(&blocked_queue);
     list_init(&sleeping_queue);
-    mutexlock_init(&lock);
 
     task_setup();
 

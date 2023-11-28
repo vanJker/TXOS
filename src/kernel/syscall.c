@@ -74,8 +74,9 @@ void syscall_init() {
         syscall_table[i] = sys_default;
     }
 
-    syscall_table[SYS_TEST]  = sys_test;
-    syscall_table[SYS_SLEEP] = sys_sleep;
-    syscall_table[SYS_YIELD] = sys_yield;
-    syscall_table[SYS_WRITE] = sys_write;
+    syscall_table[SYS_TEST]     = sys_test;
+    syscall_table[SYS_SLEEP]    = sys_sleep;
+    syscall_table[SYS_YIELD]    = sys_yield;
+    syscall_table[SYS_WRITE]    = sys_write;
+    syscall_table[SYS_BRK]      = sys_brk;
 }

@@ -453,3 +453,37 @@ u32 get_kernel_page_dir() {
 bitmap_t *get_kernel_vmap() {
     return &kmm.kernel_vmap;
 }
+
+/*******************************
+ ***     实现的系统调用处理     ***
+ *******************************/
+
+i32 sys_brk(void *addr) {
+    LOGK("task brk 0x%p\n", addr);
+    
+    // 保证 brk 的地址是页的起始地址
+    u32 brk = (u32)addr;
+    ASSERT_PAGE_ADDR(brk);
+
+    // 保证触发 brk 的是用户态进程
+    task_t *current = current_task();
+    assert(current->uid != KERNEL_TASK);
+
+    // 保证 brk 的地址位于合法范围
+    assert(KERNEL_MEMORY_SIZE <= brk && brk < USER_STACK_BOOTOM);
+
+    u32 old_brk = current->brk; // 原先的 brk 地址
+    if (old_brk > brk) {
+        // 如果原先的 brk 地址高于指定的 brk 地址
+        for (u32 addr = brk; addr < old_brk; addr += PAGE_SIZE) {
+            unlink_page(addr);
+        }
+    } else if (PAGE_IDX(brk - old_brk) > mm.free_pages) {
+        // 如果指定的 brk 地址高于原先的 brk 地址，且需要扩展的内存大于空闲内存
+        return -1; // out of memory
+    }
+
+    // 更新进程的 brk 地址
+    current->brk = brk;
+    return 0;
+}
