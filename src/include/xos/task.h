@@ -91,4 +91,7 @@ void task_to_user_mode(target_t target);
 pid_t sys_getpid();
 pid_t sys_getppid();
 
+// 系统调用 fork 的处理函数
+pid_t sys_fork();
+
 #endif

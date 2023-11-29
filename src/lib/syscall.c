@@ -71,3 +71,7 @@ pid_t get_pid() {
 pid_t get_ppid() {
     return _syscall0(SYS_GETPPID);
 }
+
+pid_t fork() {
+    return _syscall0(SYS_FORK);
+}

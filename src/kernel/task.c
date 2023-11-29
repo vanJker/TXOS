@@ -11,6 +11,7 @@
 #include <xos/arena.h>
 
 extern void task_switch(task_t *next);
+extern void interrupt_exit();
 extern u32 volatile jiffies;
 extern const u32 jiffy;
 extern tss_t tss;
@@ -338,6 +339,30 @@ void task_to_user_mode(target_t target) {
     real_task_to_user_mode(target);
 }
 
+// 配置子进程的内核栈，使得子进程调用 fork() 的返回值为 0，并使得其可以参与进程调度
+static void task_build_stack(task_t *task) {
+    u32 addr = (u32)task + PAGE_SIZE;
+
+    // 中断帧
+    addr -= sizeof(intr_frame_t);
+    intr_frame_t *intr_frame = (intr_frame_t *)addr;
+    intr_frame->eax = 0; // 设置 `eax` 字段来设置子进程 `fork` 的返回值为 0
+
+    // 任务上下文
+    addr -= sizeof(task_frame_t);
+    task_frame_t *task_frame = (task_frame_t *)addr;
+    task_frame->eip = interrupt_exit; // 设置 `eip` 字段来设置 `task_switch()` 的返回地址为 `interrupt_exit`
+
+    // DEBUG
+    task_frame->edi = 0xaa55aa55;
+    task_frame->esi = 0xaa55aa55;
+    task_frame->ebx = 0xaa55aa55;
+    task_frame->ebp = 0xaa55aa55;
+
+    // 设置紫禁城的内核栈指针
+    task->stack = (u32 *)addr;
+}
+
 extern void idle_thread();
 extern void init_thread();
 extern void test_thread();
@@ -364,4 +389,41 @@ pid_t sys_getpid() {
 
 pid_t sys_getppid() {
     return current_task()->ppid;
+}
+
+pid_t sys_fork() {
+    // LOGK("fork is called\n");
+    task_t *current = current_task();
+
+    assert(current->uid != KERNEL_TASK);    // 保证调用 fork 的是用户态进程
+    assert(current->state == TASK_RUNNING); // 保证当前进程处于运行态
+    ASSERT_NODE_FREE(&current->node);       // 保证当前进程不位于任意阻塞队列
+
+    // 创建子进程，并拷贝当前进程的内核栈和 PCB 来初始化子进程
+    task_t *child = get_free_task();
+    pid_t pid = child->pid;
+    memcpy(child, current, PAGE_SIZE);
+
+    child->pid = pid;                   // 设置子进程的 pid
+    child->ppid = current->pid;         // 设置子进程的 ppid
+    child->jiffies = child->priority;   // 初始时进程的剩余时间片等于优先级
+    child->state = TASK_READY;          // 设置子进程为就绪态
+
+    // 对于子进程 PCB 中与内存分配相关的字段，需要新申请内存分配
+    child->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t)); // TODO: kfree
+    memcpy(child->vmap, current->vmap, sizeof(bitmap_t));
+    u8 *buf = (u8 *)kalloc_page(1); // TODO: kfree_page
+    memcpy(buf, current->vmap->bits, PAGE_SIZE);
+    child->vmap->bits = buf;
+
+    // 拷贝当前进程的页目录
+    child->page_dir = (u32)copy_pde();
+
+    // 设置子进程的内核栈
+    task_build_stack(child);
+
+    // schedule();
+
+    // 父进程返回子进程的 ID
+    return child->pid;
 }

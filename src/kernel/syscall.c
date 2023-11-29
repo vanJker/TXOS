@@ -81,4 +81,5 @@ void syscall_init() {
     syscall_table[SYS_BRK]      = sys_brk;
     syscall_table[SYS_GETPID]   = sys_getpid;
     syscall_table[SYS_GETPPID]  = sys_getppid;
+    syscall_table[SYS_FORK]     = sys_fork;
 }
