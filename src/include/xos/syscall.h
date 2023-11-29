@@ -12,7 +12,9 @@
 typedef enum syscall_t {
     SYS_TEST,
     SYS_WRITE   = 4,
+    SYS_GETPID  = 20,
     SYS_BRK     = 45,
+    SYS_GETPPID = 64,
     SYS_YIELD   = 158,
     SYS_SLEEP   = 162,
 } syscall_t;
@@ -31,5 +33,7 @@ void    yield();
 void    sleep(u32 ms);
 i32     write(fd_t fd, char *buf, size_t len);
 i32     brk(void *addr);
+pid_t   get_pid();
+pid_t   get_ppid();
 
 #endif

@@ -41,6 +41,8 @@ typedef struct task_t {
     u32 ticks;                  // 剩余时间片
     u32 jiffies;                // 上次执行时的全局时间片
     u32 uid;                    // 用户 ID
+    pid_t pid;                  // 进程 id
+    pid_t ppid;                 // 父进程 id
     u32 page_dir;               // 页目录的物理地址
     bitmap_t *vmap;             // 任务虚拟内存位图
     u32 brk;                    // 任务堆内存最高地址
@@ -82,5 +84,11 @@ void task_wakeup();
 
 // 切换到用户模式
 void task_to_user_mode(target_t target);
+
+
+/*** 实现的系统调用处理 ***/
+
+pid_t sys_getpid();
+pid_t sys_getppid();
 
 #endif

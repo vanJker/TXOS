@@ -24,25 +24,13 @@ void idle_thread() {
 
 #define UBMB asm volatile("xchgw %bx, %bx");
 
+// 初始化任务 init 的用户态线程
 static void user_init_thread() {
     size_t counter = 0;
 
     while (true) {
         // printf("task in user mode can use printf! %d\n", counter++);
-        char *ptr;
-        
-        ptr = (char *)0x900000;
-        brk(ptr);
-        UBMB
-
-        ptr -= 0x1000;
-        ptr[3] = 'T';
-        UBMB
-
-        ptr = (char *)0x800000;
-        brk(ptr);
-        UBMB
-
+        printf("init thread pid: %d, ppid: %d, counter: %d\n", get_pid(), get_ppid(), counter++);
         sleep(1000);
     }
 }
@@ -52,12 +40,14 @@ void init_thread() {
     task_to_user_mode((target_t)user_init_thread);
 }
 
+// 测试任务 test
 void test_thread() {
     irq_enable();
     u32 counter = 0;
 
     while (true) {
-        printf("test task %d...\n", counter++);
+        // printf("test task %d...\n", counter++);
+        printf("test thread pid: %d, ppid: %d, counter: %d\n", get_pid(), get_ppid(), counter++);
         sleep(2000);
     }
 }
