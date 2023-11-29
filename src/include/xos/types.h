@@ -42,6 +42,9 @@ typedef unsigned long long u64;
 typedef float  f32;
 typedef double f64;
 
+// 进程标识符
+typedef i32 pid_t;
+
 // 文件描述符
 typedef i32 fd_t;
 // 系统保留文件描述符

@@ -31,7 +31,10 @@ static task_t *idle_task;
 static task_t *get_free_task() {
     for (size_t i = 0; i < NUM_TASKS; i++) {
         if (task_queue[i] == NULL) {
-            task_queue[i] = (task_t *)kalloc_page(1);
+            task_t *task = (task_t *)kalloc_page(1);
+            memset(task, 0, PAGE_SIZE); // 清空 TCB 所在的页
+            task->pid = i;              // 分配进程 id
+            task_queue[i] = task;
             return task_queue[i];
         }
     }
@@ -126,7 +129,6 @@ void schedule() {
 // 创建一个默认的任务 TCB
 static task_t *task_create(target_t target, const char *name, u32 priority, u32 uid) {
     task_t *task = get_free_task();
-    memset(task, 0, PAGE_SIZE); // 清空 TCB 所在的页
 
     u32 stack = (u32)task + PAGE_SIZE;
 
@@ -350,4 +352,16 @@ void task_init() {
     idle_task = task_create((target_t)idle_thread, "idle", 1, KERNEL_TASK);
     task_create((target_t)init_thread, "init", 5, USER_TASK);
     task_create((target_t)test_thread, "test", 5, KERNEL_TASK);
+}
+
+/*******************************
+ ***     实现的系统调用处理     ***
+ *******************************/
+
+pid_t sys_getpid() {
+    return current_task()->pid;
+}
+
+pid_t sys_getppid() {
+    return current_task()->ppid;
 }
