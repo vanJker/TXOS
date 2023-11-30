@@ -74,6 +74,9 @@ void kfree_page(u32 vaddr, u32 count);
 // 拷贝当前任务的页目录
 page_entry_t *copy_pde();
 
+// 将虚拟地址 vaddr 所在的页拷贝到一个空闲物理页，并返回该物理页的物理地址
+u32 copy_page(u32 vaddr);
+
 // 内核页目录的物理地址
 u32 get_kernel_page_dir();
 

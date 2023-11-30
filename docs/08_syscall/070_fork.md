@@ -34,9 +34,8 @@ RETURN VALUE
        in the parent, no child process is created, and errno is set to indicate the error.
 ```
 
-## 2. 代码分析
 
-### 2.1 系统调用链
+## 2. 系统调用链
 
 ```c
 //--> include/xos/syscall.h
@@ -68,7 +67,7 @@ void syscall_init() {
 }
 ```
 
-### 2.2 **sys_fork**
+## 3. sys_fork
 
 ```c
 //--> include/xos/task.h
@@ -134,7 +133,7 @@ pid_t sys_fork() {
 
 在父进程的 `sys_fork()` 返回前，也可以进行进程调度 `schedule()`（此时子进程已经配置完成，可以参与进程调度了），也可以不进行进程调度，这两种策略的不同仅在于父子进程的调度顺序 / 父子进程的执行顺序。
 
-### 2.3 配置子进程内核栈
+## 4. 配置子进程内核栈
 
 由于只能是用户态进程调用 `fork()`，所以子进程对应的内核栈包括：
 
@@ -171,4 +170,137 @@ static void task_build_stack(task_t *task) {
 }
 ```
 
-### 2.4 页目录拷贝
+## 5. 页目录拷贝
+
+`fork` 对于父进程内存拷贝的策略是 **写时拷贝 copy on write**，实现页框 **frame** 的写时复制比较简单，只需要在写入数据时新分配一页物理帧即可，当然具体的实现还是比较复杂，这个我们后面会进行说明。但是对于页表的写时拷贝，就比较复杂了，所以在拷贝父进程的页目录时，我们把页表也进行拷贝，仅对页框实现写时拷贝策略。
+
+子进程拷贝父进程页目录的流程：
+
+1. 拷贝父进程页目录，并设置递归页表。
+
+2. 对于页目录中的每个有效项，拷贝该项对应的页表。这样的话，父子进程都引用了相同的页框资源。
+
+3. 对于父子进程均引用的页框资源，更新页框的引用数量，并将父子进程对这些页框的读写权限均设置为只读。这是因为拷贝页目录之后，父进程和子进程共享相同的页框资源，此时为了保证写时拷贝 **copy on write** 机制，必须将页框设置为只读，在父进程 / 子进程尝试向页框写入数据时，捕获该写动作，从而进行页框的分配拷贝。（**父子进程对应页框的属性都需要设置为只读，否则怎么捕捉到写入页框的动作？**）
+
+4. 因为也设置了父进程的页表中的属性（设置页框只读），所以需要重新加载 TLB。
+
+对于进程的写时拷贝 copy on write 机制，可以通过以下图示来理解：
+
+![](./images/copy_on_write)
+
+```c
+//--> kernel/memory.c
+
+// 拷贝当前任务的页目录
+page_entry_t *copy_pde() {
+    task_t *current = current_task();
+
+    // 拷贝当前进程的页目录
+    page_entry_t *page_dir = (page_entry_t *)kalloc_page(1); // TODO: free
+    memcpy((void *)page_dir, (void *)current->page_dir, PAGE_SIZE);
+
+    // 将设置递归页表。将最后一个页表项指向页目录自身，方便修改页目录和页表
+    page_entry_t *entry = &page_dir[1023];
+    page_entry_init(entry, PAGE_IDX(page_dir));
+
+    // 对于页目录中的每个有效项，拷贝该项对应的页表，并更新页框的引用数量
+    for (size_t pde_idx = 2; pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
+        page_entry_t *pde = &page_dir[pde_idx];
+        if (!pde->present) continue;
+
+        page_entry_t *page_tbl = (page_entry_t *)(PDE_RECUR_MASK | (pde_idx << 12));
+        // 对于每个有效页表中的每个有效项，更新页框的引用数量，并将对应页框的读写权限设置为只读
+        for (size_t pte_idx = 0; pte_idx < PAGE_ENTRY_SIZE; pte_idx++) {
+            page_entry_t *pte = &page_tbl[pte_idx];
+            if (!pte->present) continue;
+
+            assert(pte->index > 0);
+            mm.memory_map[pte->index]++;    // 更新页框的引用数量
+            pte->write = 0;                 // 设置页框为只读
+            assert(pte->index < 255);
+        }
+        
+        // 拷贝页表所在页，并设置页目录项
+        u32 paddr = copy_page(page_tbl); 
+        pde->index = PAGE_IDX(paddr);
+    }
+
+    // 因为也设置了父进程的页表中的属性（设置页框只读），所以需要重新加载 TLB。
+    set_cr3(page_dir);
+
+    return page_dir;
+}
+```
+
+### 5.1 页目录项
+
+对于页目录项的处理，只需处理内核专用区域和递归项之外的页目录项即可。因为内核的恒等映射到每一个进程的，无需进行写时拷贝，也不允许写，因为用户程序是不能修改内核的。所以只需要遍历  `[2, 1023)` 之间有效的页目录项即可（第 0 页未映射，`[1, 2)` 是内核专用区域对应的页目录项，`1023` 是递归项）。
+
+```c
+    for (size_t pde_idx = 2; pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
+        ...
+    }
+```
+
+### 5.2 访问页表
+
+对于有效的页目录项，我们需要访问其对应的页表。我们可以通过 `get_pte()` 函数来访问页表，但是我们仅在页目录项有效时采访问页表，即页表一定存在，所以我们可以直接通过 **递归页表** 方法来访问页表，提高效率（`get_pte()` 会进行各种操作，例如判断页表是否存在、是否进行页表分配等等）。
+
+```c
+#define PDE_RECUR_MASK 0xFFC00000 // 递归页表的掩码
+
+page_entry_t *copy_pde() {
+    ...
+    for (size_t pde_idx = 2; pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
+        ...
+        page_entry_t *page_tbl = (page_entry_t *)(PDE_RECUR_MASK | (pde_idx << 12));
+        ..
+    }
+    ...
+}
+```
+
+## 6. 页拷贝
+
+```c
+//--> include/xos/memory.h
+
+// 将虚拟地址 vaddr 所在的页拷贝到一个空闲物理页，并返回该物理页的物理地址
+u32 copy_page(u32 vaddr);
+```
+
+在上面页目录拷贝当中，我们使用了 `copy_page()` 来对页表进行拷贝。由它的使用可以看出，这是一个很有意思的函数，它的参数是一个虚拟地址，返回值却是一个物理地址，而它的功能是将参数指定的虚拟地址所在的页，拷贝到一个空闲物理页，并返回一个该空闲物理页的物理地址。
+
+乍一看这是一个很简单的函数，使用 `alloc_page()` 分配一个物理页 `phy_addr`，然后直接使用 `memcpy()` 解决不就得了吗？但是我们需要意识到，此时我们已经开启了分页机制，即我们操作的地址都是 **虚拟地址**，那么我们使用 `memcpy()` 的参数也必须都是虚拟地址，像之前我们想当然的 `memcpy(phy_addr, vir_addr, size)` 是行不通的，因为 CPU 会将参数 `phy_addr` 视为虚拟地址而不是物理地址，这会导致 MMU 在翻译地址时因为未映射发生错误，或者修改了不相干的页。
+
+所以我们需要将分配的物理地址 `phy_addr` 临时映射到一页虚拟地址，然后再使用 `memcpy()` 进行拷贝。所以，我们需要找到一页未映射的虚拟地址，将之前获取的物理地址映射到该虚拟地址上。获取一页未映射的虚拟地址十分简单，对于用户态进程来说，检索一下进程虚拟内存位图即可。除此之外，我们还可以利用第 0 页虚拟内存，为了防止空指针访问，第 0 页虚拟内存并没有被映射，所以我们可以将第 0 页虚拟内存作为获取的物理页的映射，拷贝结束后再取消第 0 页虚拟内存的映射即可，因为我们只需要返回物理地址，临时映射到虚拟地址仅仅是为了实现拷贝。
+
+```c
+//--> kernel/memory.c
+
+// 将虚拟地址 vaddr 所在的页拷贝到一个空闲物理页，并返回该物理页的物理地址
+u32 copy_page(u32 vaddr) {
+    // 保证页对齐
+    ASSERT_PAGE_ADDR(vaddr);
+
+    // 分配一个空闲物理页
+    u32 paddr = alloc_page();
+    
+    // 临时映射到第 0 页虚拟内存
+    page_entry_t *entry = (page_entry_t *)(PDE_RECUR_MASK | (0 << 12));
+    page_entry_init(entry, PAGE_IDX(paddr));
+
+    // 拷贝 vaddr 所在页的数据
+    memcpy(0, vaddr, PAGE_SIZE);
+
+    // 取消第 0 页虚拟内存的临时映射
+    entry->present = 0;
+
+    // 返回物理地址
+    return paddr;
+}
+```
+
+- 由于第 0 页虚拟内存所在的页表必然存在（因为第 1 页开始就是内核专用区域），所以我们可以直接使用 **递归页表掩码** 来加深页表访问。
+- 拷贝时使用了空指针 `0`，但这是没关系的，因为此时映射了第 0 页虚拟内存，因此不会触发异常。
+

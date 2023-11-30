@@ -11,6 +11,8 @@
 #define ZONE_VALID    1 // ards 可用内存区域
 #define ZONE_RESERVED 2 // ards 不可用内存区域
 
+#define PDE_RECUR_MASK 0xFFC00000 // 递归页表的掩码
+
 // 魔数 - bootloader 启动时为 XOS_MAGIC，multiboot2 启动时为 MULTIBOOT2_MAGIC
 extern u32 magic;
 // 地址 - bootloader 启动时为 ARDS 的起始地址，bootloader 启动时为 Boot Information 的起始地址
@@ -431,17 +433,64 @@ void unlink_page(u32 vaddr) {
     LOGK("UNLINK from 0x%p to 0x%p\n", vaddr, paddr);
 }
 
+// 将虚拟地址 vaddr 所在的页拷贝到一个空闲物理页，并返回该物理页的物理地址
+u32 copy_page(u32 vaddr) {
+    // 保证页对齐
+    ASSERT_PAGE_ADDR(vaddr);
+
+    // 分配一个空闲物理页
+    u32 paddr = alloc_page();
+    
+    // 临时映射到第 0 页虚拟内存
+    page_entry_t *entry = (page_entry_t *)(PDE_RECUR_MASK | (0 << 12));
+    page_entry_init(entry, PAGE_IDX(paddr));
+
+    // 拷贝 vaddr 所在页的数据
+    memcpy(0, vaddr, PAGE_SIZE);
+
+    // 取消第 0 页虚拟内存的临时映射
+    entry->present = 0;
+
+    // 返回物理地址
+    return paddr;
+}
+
 // 拷贝当前任务的页目录
 page_entry_t *copy_pde() {
     task_t *current = current_task();
-    page_entry_t *pde = (page_entry_t *)kalloc_page(1); // TODO: free
-    memcpy((void *)pde, (void *)current->page_dir, PAGE_SIZE);
+    page_entry_t *page_dir = (page_entry_t *)kalloc_page(1); // TODO: free
+    memcpy((void *)page_dir, (void *)current->page_dir, PAGE_SIZE);
 
     // 将最后一个页表项指向页目录自身，方便修改页目录和页表
-    page_entry_t *entry = &pde[1023];
-    page_entry_init(entry, PAGE_IDX(pde));
+    page_entry_t *entry = &page_dir[1023];
+    page_entry_init(entry, PAGE_IDX(page_dir));
 
-    return pde;
+    // 对于页目录中的每个有效项，拷贝该项对应的页表，并更新页框的引用数量
+    for (size_t pde_idx = 2; pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
+        page_entry_t *pde = &page_dir[pde_idx];
+        if (!pde->present) continue;
+
+        page_entry_t *page_tbl = (page_entry_t *)(PDE_RECUR_MASK | (pde_idx << 12));
+        // 对于每个有效页表中的每个有效项，更新页框的引用数量，并将对应页框的读写权限设置为只读
+        for (size_t pte_idx = 0; pte_idx < PAGE_ENTRY_SIZE; pte_idx++) {
+            page_entry_t *pte = &page_tbl[pte_idx];
+            if (!pte->present) continue;
+
+            assert(pte->index > 0);
+            mm.memory_map[pte->index]++;    // 更新页框的引用数量
+            pte->write = 0;                 // 设置页框为只读
+            assert(pte->index < 255);
+        }
+        
+        // 拷贝页表所在页，并设置页目录项
+        u32 paddr = copy_page(page_tbl); 
+        pde->index = PAGE_IDX(paddr);
+    }
+
+    // 因为也设置了父进程的页表中的属性（设置页框只读），所以需要重新加载 TLB。
+    set_cr3(page_dir);
+
+    return page_dir;
 }
 
 // 内核页目录的物理地址
