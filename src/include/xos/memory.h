@@ -65,11 +65,23 @@ u32 get_cr3();
 // 设置 cr3 寄存器，参数是页目录的地址
 void set_cr3(u32 pde);
 
+// 刷新 TLB 中与 vaddr 相关的项
+void flush_tlb(u32 vaddr);
+
 // 分配 count 个连续的内核页
 u32 kalloc_page(u32 count);
 
 // 释放 count 个连续的内核页
 void kfree_page(u32 vaddr, u32 count);
+
+// 初始化页表项，设置为指定的页索引 | U | W | P
+void page_entry_init(page_entry_t *entry, u32 index);
+
+// 获取页目录
+page_entry_t *get_pde();
+
+// 获取虚拟内存 vaddr 所在的页表
+page_entry_t *get_pte(u32 vaddr, bool create);
 
 // 拷贝当前任务的页目录
 page_entry_t *copy_pde();
@@ -82,6 +94,9 @@ u32 get_kernel_page_dir();
 
 // 内核虚拟内存位图
 bitmap_t *get_kernel_vmap();
+
+// 物理内存数组
+u8 *memory_map();
 
 // 将虚拟地址 vaddr 起始的页映射到物理内存
 void link_page(u32 vaddr);

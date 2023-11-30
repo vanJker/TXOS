@@ -98,7 +98,36 @@ void page_fault_handler(
 
     task_t *current = current_task();
 
-    // 如果缺页异常发生在用户栈或用户堆范围内
+    // 尝试写入用户空间的只读页（存在且只读）时，需要对该页进行 Copy On Write
+    if (page_error->present) {
+        assert(page_error->write);
+
+        // 获取页表项以及对应页框的索引
+        page_entry_t *pgtbl = get_pte(vaddr, false);
+        page_entry_t *pte = &pgtbl[PTE_IDX(vaddr)];
+        u32 pidx = pte->index;
+
+        assert(memory_map()[pidx] > 0);
+        if (memory_map()[pidx] == 1) {
+            // 将写入的页对应的页框引用数等于 1，说明原先引用该页框的其它进程都已经对该页进行了 Copy On Write，
+            // 所以此时只有当前进程引用了该页框。那么只需将该页框的读写权限重新设置为可写即可
+            pte->write = 1;
+            LOGK("WRITE page for 0x%p\n", vaddr);
+        } else {
+            // 如果将写入的页对应的页框引用数大于 1，则需要分配一新物理页并进行拷贝，
+            // 同时需要更新当前进程的页表、刷新 TLB，以及页框的引用数。
+            u32 paddr = copy_page(PAGE_ADDR(PAGE_IDX(vaddr)));
+            page_entry_init(pte, PAGE_IDX(paddr));
+            flush_tlb(vaddr);
+            memory_map()[pidx]--;
+            LOGK("WRITE page for 0x%p\n", vaddr);
+        }
+        assert(memory_map()[pidx] > 0);
+        
+        return;
+    }
+
+    // 如果缺页异常发生在用户栈或用户堆范围内，则进行 Lazy Allocation
     if (!page_error->present && page_error->user 
         && (vaddr < current->brk || vaddr > USER_STACK_BOOTOM)
     ) {

@@ -80,7 +80,7 @@ pid_t sys_fork();
 
 1. 保证当前进程处于运行态，且不位于任意阻塞队列，以及必须是用户态进程
 2. 创建子进程，并拷贝当前进程的内核栈和 PCB 来初始化子进程
-3. 设置子进程的特定字段，例如 `pid`
+3. 设置子进程的特定字段，例如 `pid` 和 `ppid`
 4. 对于子进程 PCB 中与内存分配相关的字段，需要新申请内存分配，例如进程虚拟内存位图 `vmap` 字段
 5. 拷贝当前进程的页目录，用于设置子进程的页目录，以实现写时复制 copy on write
 6. 设置子进程的内核栈，以实现 `fork()` 返回值为 0，以及参与进程调度
@@ -200,7 +200,7 @@ page_entry_t *copy_pde() {
     memcpy((void *)page_dir, (void *)current->page_dir, PAGE_SIZE);
 
     // 将设置递归页表。将最后一个页表项指向页目录自身，方便修改页目录和页表
-    page_entry_t *entry = &page_dir[1023];
+    page_entry_t *entry = &page_dir[PAGE_ENTRY_SIZE - 1];
     page_entry_init(entry, PAGE_IDX(page_dir));
 
     // 对于页目录中的每个有效项，拷贝该项对应的页表，并更新页框的引用数量
@@ -214,10 +214,10 @@ page_entry_t *copy_pde() {
             page_entry_t *pte = &page_tbl[pte_idx];
             if (!pte->present) continue;
 
-            assert(pte->index > 0);
+            assert(mm.memory_map[pte->index] > 0);
             mm.memory_map[pte->index]++;    // 更新页框的引用数量
             pte->write = 0;                 // 设置页框为只读
-            assert(pte->index < 255);
+            assert(mm.memory_map[pte->index] < 255);
         }
         
         // 拷贝页表所在页，并设置页目录项
@@ -226,7 +226,7 @@ page_entry_t *copy_pde() {
     }
 
     // 因为也设置了父进程的页表中的属性（设置页框只读），所以需要重新加载 TLB。
-    set_cr3(page_dir);
+    set_cr3(current->page_dir);
 
     return page_dir;
 }
@@ -291,7 +291,7 @@ u32 copy_page(u32 vaddr) {
     page_entry_init(entry, PAGE_IDX(paddr));
 
     // 拷贝 vaddr 所在页的数据
-    memcpy(0, vaddr, PAGE_SIZE);
+    memcpy((void *)0, (void *)vaddr, PAGE_SIZE);
 
     // 取消第 0 页虚拟内存的临时映射
     entry->present = 0;
@@ -304,3 +304,129 @@ u32 copy_page(u32 vaddr) {
 - 由于第 0 页虚拟内存所在的页表必然存在（因为第 1 页开始就是内核专用区域），所以我们可以直接使用 **递归页表掩码** 来加深页表访问。
 - 拷贝时使用了空指针 `0`，但这是没关系的，因为此时映射了第 0 页虚拟内存，因此不会触发异常。
 
+## 7. Copy On Write
+
+如前面所说的，拷贝页目录时，设置所引用的页框资源的读写权限为只读。那么当父进程 / 子进程（不仅仅只有 2 个进程，因为子进程也可以进行 `fork` 创建子进程，而且引用的也是同一部分页框）尝试写入数据时，就会触发 **Page Fault**。
+
+这是我们故意为之的，因为我们需要像 **Lazy Allocation** 一样，借助 **Page Fault** 来进行 **Copy On Write**。其处理流程如下：
+
+1. 当某一进程尝试写入用户空间的只读页时，说明需要对该页进行 **Copy On Write**。
+
+2. 如果将写入的页对应的页框引用数大于 1，则需要分配一新物理页并进行拷贝，同时需要更新当前进程的页表、刷新 TLB，以及页框的引用数。
+
+3. 如果将写入的页对应的页框引用数等于 1，说明原先引用该页框的其它进程都已经对该页进行了 **Copy On Write**，所以此时只有当前进程引用了该页框。那么只需将该页框的读写权限重新设置为可写即可。
+
+```c
+//-> kernel/memory.c
+
+void page_fault_handler(...) {
+    ...
+    // 尝试写入用户空间的只读页（存在且只读）时，需要对该页进行 Copy On Write
+    if (page_error->present) {
+        assert(page_error->write);
+
+        // 获取页表项以及对应页框的索引
+        page_entry_t *pgtbl = get_pte(vaddr, false);
+        page_entry_t *pte = &pgtbl[PTE_IDX(vaddr)];
+        u32 pidx = pte->index;
+
+        assert(memory_map()[pidx] > 0);
+        if (memory_map()[pidx] == 1) {
+            // 将写入的页对应的页框引用数等于 1，说明原先引用该页框的其它进程都已经对该页进行了 Copy On Write，
+            // 所以此时只有当前进程引用了该页框。那么只需将该页框的读写权限重新设置为可写即可
+            pte->write = 1;
+            LOGK("WRITE page for 0x%p\n", vaddr);
+        } else {
+            // 如果将写入的页对应的页框引用数大于 1，则需要分配一新物理页并进行拷贝，
+            // 同时需要更新当前进程的页表、刷新 TLB，以及页框的引用数。
+            u32 paddr = copy_page(PAGE_ADDR(PAGE_IDX(vaddr)));
+            page_entry_init(pte, PAGE_IDX(paddr));
+            flush_tlb(vaddr);
+            memory_map()[pidx]--;
+            LOGK("WRITE page for 0x%p\n", vaddr);
+        }
+        assert(memory_map()[pidx] > 0);
+        
+        return;
+    }
+    ...
+}
+```
+
+> 注：这一部分处理需要在 **Lazy Allocation** 处理之前。
+
+为了实现在 **Page Fault** 处理中实现页框的 **Copy On Write** 机制，我们需要将内存管路的一部分接口开放：
+
+```c
+//--> include/xos/memory.h
+
+// 初始化页表项，设置为指定的页索引 | U | W | P
+void page_entry_init(page_entry_t *entry, u32 index);
+
+// 获取页目录
+page_entry_t *get_pde();
+
+// 获取虚拟内存 vaddr 所在的页表
+page_entry_t *get_pte(u32 vaddr, bool create);
+
+// 刷新 TLB 中与 vaddr 有关的项
+void flush_tlb(u32 vaddr);
+
+// 物理内存数组
+u8 *memory_map();
+```
+
+<details>
+
+<summary>用户空间只读页的处理</summary>
+
+目前的处理可能会与用户空间的只读页发生冲突，但是我们现在还不支持用户空间的只读页，所以先这么处理，后续再进行改进。
+
+</details>
+
+## 8. 功能测试
+
+```c
+//--> kernel/thread.c
+
+// 初始化任务 init 的用户态线程
+static void user_init_thread() {
+    while (true) {
+        pid_t pid = fork();
+
+        if (pid == 0) {
+            // child process
+            printf("fork after child:  fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
+        } else {
+            // parent process
+            printf("fork after parent: fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
+        }
+
+        hang();
+    }
+}
+```
+
+预期输出为：
+
+```c
+fork after parent: fork() = 3, pid = 1, ppid = 0
+fork after child:  fork() = 0, pid = 3, ppid = 1
+```
+
+## 3.1 Copy On Write
+
+在 `sys_fork()` 和 `page_fault_handler()` 处打断点，观察父子进程的 **Copy On Write** 机制的过程。
+
+- 观察物理数组 `memory_map` 中对应页框引用数的变化
+- 观察父子进程页表的变化
+
+## 3.2 子进程内核栈
+
+在 `task_build()` 和 `schedule()` 处打断点，观察子进程内核栈的配置以及参与调度的过程。
+
+- 在任务上下文切换 `task_switch()` 中观察寄存器的值，例如栈上存储的连续 4 个 `0xaa55aa55` 的寄存器值。以及借助符号表 `kernel_map` 确定上下文切换后返回的地址。
+
+- 在中断返回 `interrupt_exit()` 中观察寄存器的值，例如中断返回值 `eax`。以及借助符号表 `kernel.map` 确定中断返回的地址。
+
+可以使用 Bochs 或 Qemu 进行调试，Qemu 调试时输出信息可以参考 [Debug 指南 - Qemu Debug](../others/debug.md#qemu-debug)。

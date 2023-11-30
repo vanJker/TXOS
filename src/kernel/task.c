@@ -402,7 +402,7 @@ pid_t sys_fork() {
     // 创建子进程，并拷贝当前进程的内核栈和 PCB 来初始化子进程
     task_t *child = get_free_task();
     pid_t pid = child->pid;
-    memcpy(child, current, PAGE_SIZE);
+    memcpy((void *)child, (void *)current, PAGE_SIZE);
 
     child->pid = pid;                   // 设置子进程的 pid
     child->ppid = current->pid;         // 设置子进程的 ppid
@@ -413,7 +413,7 @@ pid_t sys_fork() {
     child->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t)); // TODO: kfree
     memcpy(child->vmap, current->vmap, sizeof(bitmap_t));
     u8 *buf = (u8 *)kalloc_page(1); // TODO: kfree_page
-    memcpy(buf, current->vmap->bits, PAGE_SIZE);
+    memcpy((void *)buf, (void *)current->vmap->bits, PAGE_SIZE);
     child->vmap->bits = buf;
 
     // 拷贝当前进程的页目录

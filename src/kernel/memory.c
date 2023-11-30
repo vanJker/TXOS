@@ -237,7 +237,7 @@ static _inline void enable_page() {
 }
 
 // 初始化页表项，设置为指定的页索引 | U | W | P
-static void page_entry_init(page_entry_t *entry, u32 index) {
+void page_entry_init(page_entry_t *entry, u32 index) {
     *(u32 *)entry = 0;
     entry->present = 1;
     entry->write = 1;
@@ -295,13 +295,13 @@ static void kernel_vmap_init() {
 }
 
 // 获取页目录
-static page_entry_t *get_pde() {
+page_entry_t *get_pde() {
     // return (page_entry_t *)kmm.kernel_page_dir;
     return (page_entry_t *)(0xfffff000);
 }
 
 // 获取虚拟内存 vaddr 所在的页表
-static page_entry_t *get_pte(u32 vaddr, bool create) {
+page_entry_t *get_pte(u32 vaddr, bool create) {
     // return (page_entry_t *)kmm.kernel_page_table[PDE_IDX(vaddr)];
     // 获取对应的 pde
     page_entry_t *pde = get_pde();
@@ -321,8 +321,8 @@ static page_entry_t *get_pte(u32 vaddr, bool create) {
     return (page_entry_t *)(0xffc00000 | (PDE_IDX(vaddr) << 12));
 }
 
-// 刷新 TLB
-static void flush_tlb(u32 vaddr) {
+// 刷新 TLB 中与 vaddr 相关的项
+void flush_tlb(u32 vaddr) {
     asm volatile("invlpg (%0)" ::"r"(vaddr)
                  : "memory");
 }
@@ -446,7 +446,7 @@ u32 copy_page(u32 vaddr) {
     page_entry_init(entry, PAGE_IDX(paddr));
 
     // 拷贝 vaddr 所在页的数据
-    memcpy(0, vaddr, PAGE_SIZE);
+    memcpy((void *)0, (void *)vaddr, PAGE_SIZE);
 
     // 取消第 0 页虚拟内存的临时映射
     entry->present = 0;
@@ -462,7 +462,7 @@ page_entry_t *copy_pde() {
     memcpy((void *)page_dir, (void *)current->page_dir, PAGE_SIZE);
 
     // 将最后一个页表项指向页目录自身，方便修改页目录和页表
-    page_entry_t *entry = &page_dir[1023];
+    page_entry_t *entry = &page_dir[PAGE_ENTRY_SIZE - 1];
     page_entry_init(entry, PAGE_IDX(page_dir));
 
     // 对于页目录中的每个有效项，拷贝该项对应的页表，并更新页框的引用数量
@@ -476,19 +476,19 @@ page_entry_t *copy_pde() {
             page_entry_t *pte = &page_tbl[pte_idx];
             if (!pte->present) continue;
 
-            assert(pte->index > 0);
+            assert(mm.memory_map[pte->index] > 0);
             mm.memory_map[pte->index]++;    // 更新页框的引用数量
             pte->write = 0;                 // 设置页框为只读
-            assert(pte->index < 255);
+            assert(mm.memory_map[pte->index] < 255);
         }
         
         // 拷贝页表所在页，并设置页目录项
-        u32 paddr = copy_page(page_tbl); 
+        u32 paddr = copy_page((u32)page_tbl); 
         pde->index = PAGE_IDX(paddr);
     }
 
     // 因为也设置了父进程的页表中的属性（设置页框只读），所以需要重新加载 TLB。
-    set_cr3(page_dir);
+    set_cr3(current->page_dir);
 
     return page_dir;
 }
@@ -501,6 +501,11 @@ u32 get_kernel_page_dir() {
 // 内核虚拟内存位图
 bitmap_t *get_kernel_vmap() {
     return &kmm.kernel_vmap;
+}
+
+// 物理内存数组
+u8 *memory_map() {
+    return mm.memory_map;
 }
 
 /*******************************

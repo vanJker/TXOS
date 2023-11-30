@@ -6,6 +6,7 @@
 #include <xos/task.h>
 #include <xos/stdio.h>
 #include <xos/arena.h>
+#include <xos/stdlib.h>
 
 // 空闲任务 idle
 void idle_thread() {
@@ -30,8 +31,19 @@ static void user_init_thread() {
 
     while (true) {
         // printf("task in user mode can use printf! %d\n", counter++);
-        printf("init thread pid: %d, ppid: %d, counter: %d\n", get_pid(), get_ppid(), counter++);
-        sleep(1000);
+        // printf("init thread pid: %d, ppid: %d, counter: %d\n", get_pid(), get_ppid(), counter++);
+        pid_t pid = fork();
+
+        if (pid == 0) {
+            // child process
+            printf("fork after child:  fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
+        } else {
+            // parent process
+            printf("fork after parent: fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
+        }
+
+        hang();
+        // sleep(1000);
     }
 }
 
@@ -47,7 +59,7 @@ void test_thread() {
 
     while (true) {
         // printf("test task %d...\n", counter++);
-        printf("test thread pid: %d, ppid: %d, counter: %d\n", get_pid(), get_ppid(), counter++);
+        // printf("test thread pid: %d, ppid: %d, counter: %d\n", get_pid(), get_ppid(), counter++);
         sleep(2000);
     }
 }
