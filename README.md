@@ -2,17 +2,24 @@
 
 A simple OS written in C.
 
-## 内存布局
+## Memory Layout
 
-内核映射前的内存空间布局：
+Before Memory Mapping：
 
 | module | start address | size |
 | :----: | :-----------: | :--: |
-| boot   | 0x7c00  | 512 Bytes |
-| loader | 0x1000  | 2 MB |
-| kernel | 0x10000 | 10 MB |
+| boot   | 0x7c00        | 512 B |
+| loader | 0x1000        | 2 KB  |
+| kernel | 0x10000       | 100 KB |
 
-## 相关软件版本参考
+After Memory Mapping：
+
+| module | start address | size |
+| :----: | :-----------: | :--: |
+| kernel | 0x000000      | 8 MB |
+| user   | 0x800000      | 10 MB|
+
+## Tools
 
 - bochs == 2.7.1
 - qemu == 8.1.0
@@ -20,7 +27,7 @@ A simple OS written in C.
 - gdb == 13.2
 - nasm == 2.16.01
 
-## 参考文献
+## References
 
 - Onix: <https://github.com/StevenBaby/onix>
 - The Truth of OS: <https://github.com/xukanshan/the_truth_of_operationg_system>
