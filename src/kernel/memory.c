@@ -194,6 +194,7 @@ static void free_page(u32 addr) {
     u32 idx = PAGE_IDX(addr);
 
     // 页索引 idx 在可分配内存范围内
+    DEBUGK("addr: 0x%x, idx: %d\n", addr, idx);
     assert(idx >= mm.start_page_idx && idx < mm.total_pages);
 
     // 不释放空闲页
@@ -455,10 +456,11 @@ u32 copy_page(u32 vaddr) {
     return paddr;
 }
 
-// 拷贝当前任务的页目录
+// 拷贝当前任务的页目录（表示的用户空间）
 page_entry_t *copy_pde() {
     task_t *current = current_task();
-    page_entry_t *page_dir = (page_entry_t *)kalloc_page(1); // TODO: free
+
+    page_entry_t *page_dir = (page_entry_t *)kalloc_page(1);
     memcpy((void *)page_dir, (void *)current->page_dir, PAGE_SIZE);
 
     // 将最后一个页表项指向页目录自身，方便修改页目录和页表
@@ -491,6 +493,36 @@ page_entry_t *copy_pde() {
     set_cr3(current->page_dir);
 
     return page_dir;
+}
+
+// 释放当前任务的页目录（表示的用户空间）
+void free_pde() {
+    LOGK("Before free_pde(), free pages: %d\n", mm.free_pages);
+
+    task_t *current = current_task();
+
+    page_entry_t *page_dir = (page_entry_t *)current->page_dir;
+    // 对于页目录中的每个有效项，释放该项对应的页表
+    for (size_t pde_idx = 2; pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
+        page_entry_t *pde = &page_dir[pde_idx];
+        if (!pde->present) continue;
+
+        page_entry_t *page_tbl = (page_entry_t *)(PDE_RECUR_MASK | (pde_idx << 12));
+        // 对于每个有效页表中的每个有效项，释放对应的页框
+        for (size_t pte_idx = 0; pte_idx < PAGE_ENTRY_SIZE; pte_idx++) {
+            page_entry_t *pte = &page_tbl[pte_idx];
+            if (!pte->present) continue;
+
+            free_page(PAGE_ADDR(pte->index));
+        }
+
+        free_page(PAGE_ADDR(pde->index));
+    }
+
+    // 释放页目录
+    kfree_page((u32)page_dir, 1);
+
+    LOGK("After free_pde(), free pages: %d\n", mm.free_pages);
 }
 
 // 内核页目录的物理地址

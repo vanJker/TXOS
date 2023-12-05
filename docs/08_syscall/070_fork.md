@@ -110,6 +110,7 @@ pid_t sys_fork() {
     // 对于子进程 PCB 中与内存分配相关的字段，需要新申请内存分配
     child->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t)); // TODO: kfree
     memcpy(child->vmap, current->vmap, sizeof(bitmap_t));
+
     u8 *buf = (u8 *)kalloc_page(1); // TODO: kfree_page
     memcpy(buf, current->vmap->bits, PAGE_SIZE);
     child->vmap->bits = buf;
@@ -129,7 +130,7 @@ pid_t sys_fork() {
 
 对于进程虚拟内存位图的拷贝机制，可以通过以下图示来理解：
 
-![](./images/task_vmap_copy)
+![](./images/task_vmap_copy.drawio.svg)
 
 在父进程的 `sys_fork()` 返回前，也可以进行进程调度 `schedule()`（此时子进程已经配置完成，可以参与进程调度了），也可以不进行进程调度，这两种策略的不同仅在于父子进程的调度顺序 / 父子进程的执行顺序。
 
@@ -186,12 +187,12 @@ static void task_build_stack(task_t *task) {
 
 对于进程的写时拷贝 copy on write 机制，可以通过以下图示来理解：
 
-![](./images/copy_on_write)
+![](./images/frame_copy_on_write.drawio.svg)
 
 ```c
 //--> kernel/memory.c
 
-// 拷贝当前任务的页目录
+// 拷贝当前任务的页目录（表示的用户空间）
 page_entry_t *copy_pde() {
     task_t *current = current_task();
 
@@ -199,7 +200,7 @@ page_entry_t *copy_pde() {
     page_entry_t *page_dir = (page_entry_t *)kalloc_page(1); // TODO: free
     memcpy((void *)page_dir, (void *)current->page_dir, PAGE_SIZE);
 
-    // 将设置递归页表。将最后一个页表项指向页目录自身，方便修改页目录和页表
+    // 设置递归页表。将最后一个页表项指向页目录自身，方便修改页目录和页表
     page_entry_t *entry = &page_dir[PAGE_ENTRY_SIZE - 1];
     page_entry_init(entry, PAGE_IDX(page_dir));
 
@@ -259,6 +260,8 @@ page_entry_t *copy_pde() {
     ...
 }
 ```
+
+- 注意运算的优先级，所以 `pde_idx << 12` 必须使用括号括起来。
 
 ## 6. 页拷贝
 

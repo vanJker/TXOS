@@ -11,6 +11,7 @@
 // 系统调用号
 typedef enum syscall_t {
     SYS_TEST,
+    SYS_EXIT    = 1,
     SYS_FORK    = 2,
     SYS_WRITE   = 4,
     SYS_GETPID  = 20,
@@ -37,5 +38,6 @@ i32     brk(void *addr);
 pid_t   get_pid();
 pid_t   get_ppid();
 pid_t   fork();
+void    exit(int status);
 
 #endif

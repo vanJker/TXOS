@@ -283,8 +283,8 @@ static void real_task_to_user_mode(target_t target) {
     task_t *current = current_task();
 
     // 设置用户虚拟内存位图
-    current->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t)); // TODO: kfree()
-    u8 *buf = (u8 *)kalloc_page(1); // TODO: kfree_page()
+    current->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t));
+    u8 *buf = (u8 *)kalloc_page(1);
     bitmap_init(current->vmap, buf, PAGE_SIZE, KERNEL_MEMORY_SIZE / PAGE_SIZE);
 
     // 设置用户任务/进程页表
@@ -410,9 +410,10 @@ pid_t sys_fork() {
     child->state = TASK_READY;          // 设置子进程为就绪态
 
     // 对于子进程 PCB 中与内存分配相关的字段，需要新申请内存分配
-    child->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t)); // TODO: kfree
+    child->vmap = (bitmap_t *)kmalloc(sizeof(bitmap_t));
     memcpy(child->vmap, current->vmap, sizeof(bitmap_t));
-    u8 *buf = (u8 *)kalloc_page(1); // TODO: kfree_page
+
+    u8 *buf = (u8 *)kalloc_page(1);
     memcpy((void *)buf, (void *)current->vmap->bits, PAGE_SIZE);
     child->vmap->bits = buf;
 
@@ -426,4 +427,43 @@ pid_t sys_fork() {
 
     // 父进程返回子进程的 ID
     return child->pid;
+}
+
+void sys_exit(i32 status) {
+    // LOGK("exit is called\n");
+    task_t *current = current_task();
+
+    // 保证当前进程处于运行态，且不位于任意阻塞队列，以及必须是用户态进程
+    assert(current->uid != KERNEL_TASK);    // 保证调用 exit 的是用户态进程
+    assert(current->state == TASK_RUNNING); // 保证当前进程处于运行态
+    ASSERT_NODE_FREE(&current->node);       // 保证当前进程不位于任意阻塞队列
+
+    // 设置进程 PCB 中与状态相关的字段，例如 `state`, `status`
+    current->state = TASK_DIED; // 进程陷入“僵死”
+    current->status = status;   // 保存进程结束状态
+
+    // 对于子进程 PCB 中与内存分配相关的字段，需要进行内存释放，例如进程虚拟内存位图 `vmap` 字段
+    u8 *buf = current->vmap->bits;
+    kfree_page((u32)buf, 1);
+    current->vmap->bits = NULL;
+
+    kfree((void *)current->vmap);
+    current->vmap = NULL;
+
+    // 释放当前进程的页目录、页表，以及页框，即释放用户空间
+    free_pde();
+
+    // 将当前进程的所有子进程的 `ppid` 字段，设置为当前进程的 `ppid`（进程关系的继承）
+    for (size_t i = 0; i < NUM_TASKS; i++) {
+        if (task_queue[i] == NULL)    continue;
+        if (task_queue[i] == current) continue;
+        if (task_queue[i]->ppid != current->pid) continue;
+
+        task_queue[i]->ppid = current->ppid;
+    }
+
+    LOGK("task 0x%p (pid = %d) exit...\n", current, current->pid);
+
+    // 由于当前进程已经消亡，立即进行进程调度
+    schedule();
 }

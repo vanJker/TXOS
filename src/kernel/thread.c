@@ -37,13 +37,13 @@ static void user_init_thread() {
         if (pid == 0) {
             // child process
             printf("fork after child:  fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
+            exit(0);
         } else {
             // parent process
             printf("fork after parent: fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
         }
 
-        hang();
-        // sleep(1000);
+        sleep(1000);
     }
 }
 

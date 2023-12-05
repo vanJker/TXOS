@@ -75,3 +75,7 @@ pid_t get_ppid() {
 pid_t fork() {
     return _syscall0(SYS_FORK);
 }
+
+void exit(int status) {
+    _syscall1(SYS_EXIT, status);
+}
