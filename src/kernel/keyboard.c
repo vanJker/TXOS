@@ -405,7 +405,7 @@ size_t keyboard_read(char *buf, size_t count) {
         while (fifo_empty(&keyboard.fifo)) {
             // 如果当前键盘环形缓冲区为空，则阻塞当前任务为等待状态
             keyboard.waiter = current_task();
-            task_block(keyboard.waiter, NULL, TASK_WAITING);
+            task_block(keyboard.waiter, NULL, TASK_BLOCKED);
         }
         buf[i++] = fifo_get(&keyboard.fifo);
     }

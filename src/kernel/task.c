@@ -433,7 +433,6 @@ void sys_exit(i32 status) {
     // LOGK("exit is called\n");
     task_t *current = current_task();
 
-    // 保证当前进程处于运行态，且不位于任意阻塞队列，以及必须是用户态进程
     assert(current->uid != KERNEL_TASK);    // 保证调用 exit 的是用户态进程
     assert(current->state == TASK_RUNNING); // 保证当前进程处于运行态
     ASSERT_NODE_FREE(&current->node);       // 保证当前进程不位于任意阻塞队列
@@ -454,7 +453,7 @@ void sys_exit(i32 status) {
     free_pde();
 
     // 将当前进程的所有子进程的 `ppid` 字段，设置为当前进程的 `ppid`（进程关系的继承）
-    for (size_t i = 0; i < NUM_TASKS; i++) {
+    for (size_t i = 2; i < NUM_TASKS; i++) {
         if (task_queue[i] == NULL)    continue;
         if (task_queue[i] == current) continue;
         if (task_queue[i]->ppid != current->pid) continue;
@@ -462,8 +461,71 @@ void sys_exit(i32 status) {
         task_queue[i]->ppid = current->ppid;
     }
 
+    // 如果父进程因为等待该进程而处于 WAITING 态的话，进行唤醒
+    task_t *parent = task_queue[current->ppid];
+    if (parent->state == TASK_WAITING
+        && (parent->waitpid == current->pid || parent->waitpid == -1)
+    ) {
+        task_unblock(parent);
+    }
+
     LOGK("task 0x%p (pid = %d) exit...\n", current, current->pid);
 
     // 由于当前进程已经消亡，立即进行进程调度
     schedule();
+}
+
+pid_t sys_waitpid(pid_t pid, i32 *status) {
+    // LOGK("waitpid is called\n");
+    task_t *current = current_task();
+    task_t *child = NULL;
+
+    assert(current->uid != KERNEL_TASK);    // 保证调用 waitpid 的是用户态进程
+    assert(current->state == TASK_RUNNING); // 保证当前进程处于运行态
+    ASSERT_NODE_FREE(&current->node);       // 保证当前进程不位于任意阻塞队列
+
+    while (true) {
+        bool has_child = false; // 是否寻找到符合条件的子进程
+
+        for (size_t i = 2; i < NUM_TASKS; i++) {
+            if (task_queue[i] == NULL)    continue;
+            if (task_queue[i] == current) continue;
+
+            if (task_queue[i]->ppid != current->pid)    continue;
+            if (task_queue[i]->pid != pid && pid != -1) continue;
+
+            has_child = true; // 已找到符合条件的子进程
+            child = task_queue[i];
+            if (child->state == TASK_DIED) {
+                // 子进程处于“僵死”
+                task_queue[i] = NULL; // 释放进程表中占据的位置
+                goto rollback;
+            } else {
+                // 子进程未处于“僵死”
+                break;
+            }
+        }
+
+        if (has_child) {
+            assert(child != NULL);
+            // 找到子进程但子进程未处于“僵死”态
+            current->waitpid = child->pid;
+            task_block(current, NULL, TASK_WAITING);
+            continue;
+        } else {
+            // 未找到子进程
+            break;
+        }
+    }
+
+    return -1;
+
+rollback:
+    assert(child != NULL);
+    pid_t ret = child->pid;     // 保存子进程的 pid 用于返回
+    if (status != NULL) {       // 传递子进程的结束状态
+        *status = child->status;
+    }
+    kfree_page((u32)child, 1);  // 释放 PCB 和内核栈所在的页
+    return ret;
 }

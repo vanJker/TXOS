@@ -125,7 +125,7 @@ void sys_exit(i32 status) {
     free_pde();
 
     // 将当前进程的所有子进程的 `ppid` 字段，设置为当前进程的 `ppid`（进程关系的继承）
-    for (size_t i = 0; i < NUM_TASKS; i++) {
+    for (size_t i = 2; i < NUM_TASKS; i++) {
         if (task_queue[i] == NULL)    continue;
         if (task_queue[i] == current) continue;
         if (task_queue[i]->ppid != current->pid) continue;
@@ -139,6 +139,8 @@ void sys_exit(i32 status) {
     schedule();
 }
 ```
+
+- 由于 0 号进程为 `idle` 进程，1 号进程为 `init` 进程，这两个进程都不会存在父进程（所以初始化时，`ppid` 字段为 0）。为了后续 `waitpid` 的正确性，在遍历进程表时应该跳过这两个进程（`wait(0)` 表示等待任意子进程结束）。
 
 ## 4. 释放页表
 
@@ -223,5 +225,5 @@ static void user_init_thread() {
 预期为：
 
 - `free_pde()` 中释放了两页物理内存，一页栈内存，一页对应页表的内存
-- 可用物理页在减少（因为子进程调用 `exit` 后只是陷入“僵死”，但是并没有释放 PCB 和内核栈所在的物理页）
+- 可用物理页在减少，因为子进程调用 `exit` 后只是陷入“僵死”，但是并没有释放 PCB 和内核栈所在的物理页，同时这也导致了新进程的 PID 一直在增大
 - 最终无法分配可用的空闲进程，导致触发 `panic`
