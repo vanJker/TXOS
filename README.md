@@ -2,22 +2,13 @@
 
 A simple OS written in C.
 
-## Memory Layout
+## Memory Management
 
-Before Memory Mapping：
+See [this document](/docs/05_memory_management/README.md).
 
-| module | start address | size |
-| :----: | :-----------: | :--: |
-| boot   | 0x7c00        | 512 B |
-| loader | 0x1000        | 2 KB  |
-| kernel | 0x10000       | 100 KB |
+## Syscall
 
-After Memory Mapping：
-
-| module | start address | size |
-| :----: | :-----------: | :--: |
-| kernel | 0x000000      | 8 MB |
-| user   | 0x800000      | 10 MB|
+See [this document](/docs/08_syscall/README.md).
 
 ## Tools
 
@@ -26,8 +17,12 @@ After Memory Mapping：
 - gcc == 13.2.1
 - gdb == 13.2
 - nasm == 2.16.01
+- GRUB == 2:2.12rc1-1
 
 ## References
 
 - Onix: <https://github.com/StevenBaby/onix>
+- Writing an OS in Rust: <https://os.phil-opp.com/>
+- MIT PDOS xv6-public: <https://github.com/mit-pdos/xv6-public>
+- MIT PDOS xv6-riscv: <https://github.com/mit-pdos/xv6-riscv>
 - The Truth of OS: <https://github.com/xukanshan/the_truth_of_operationg_system>
