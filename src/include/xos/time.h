@@ -80,8 +80,4 @@ void pit_init();
 // 初始化时钟
 void clock_init();
 
-/*** 实现的系统调用处理 ***/
-
-time_t sys_time();
-
 #endif

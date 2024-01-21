@@ -71,18 +71,11 @@ void exit(int status) {
 // 初始化系统调用
 void syscall_init() {
     ...
-    syscall_table[SYS_EXIT]     = sys_exit;
+    syscall_table[SYS_EXIT] = sys_exit;
 }
 ```
 
 ## 3. sys_exit
-
-```c
-//--> include/xos/task.h
-
-// 系统调用 exit 的处理函数
-void sys_exit(i32 status);
-```
 
 `exit` 和 `fork` 的处理是镜像对应的，`fork` 是创建子进程，并分配用户虚拟内存位图、用户页表等，`exit` 则是结束当前进程，并释放所持有的内存。当然也有未对应的处理，例如 `fork` 会在分配一个新的 PCB，而 `exit` 不会抹除 PCB，这是父进程的任务。
 

@@ -133,13 +133,6 @@ void syscall_init() {
 
 ## 3. sys_waitpid
 
-```c
-//--> include/xos/task.h
-
-// 系统调用 waitpid 的处理函数
-pid_t sys_waitpid(pid_t pid, i32 *status);
-```
-
 原理说明处我们已经探讨了 `waitpid` 的处理机制，现在我们把这个机制扩充完善成处理流程。
 
 1. 保证当前进程处于运行态，且不位于任意阻塞队列，以及必须是用户态进程

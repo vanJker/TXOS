@@ -48,7 +48,7 @@ typedef enum syscall_t {
 
 /***** 声明用户态封装后的系统调用原型 *****/
 ...
-pid_t   fork();     // new
+pid_t fork();     // new
 
 
 //--> lib/syscall.c
@@ -68,13 +68,6 @@ void syscall_init() {
 ```
 
 ## 3. sys_fork
-
-```c
-//--> include/xos/task.h
-
-// 系统调用 fork 的处理函数
-pid_t sys_fork();
-```
 
 `fork` 的内核处理流程：
 

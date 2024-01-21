@@ -1,11 +1,19 @@
 #include <xos/syscall.h>
-#include <xos/interrupt.h>
 #include <xos/task.h>
+#include <xos/interrupt.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
 #include <xos/console.h>
-#include <xos/memory.h>
-#include <xos/time.h>
+
+extern void sys_exit(i32 status);
+extern void sys_fork();
+extern pid_t sys_waitpid(pid_t pid, i32 *status);
+extern time_t sys_time();
+extern pid_t sys_getpid();
+extern i32 sys_brk(void *addr);
+extern pid_t sys_getppid();
+extern void sys_yield();
+extern void sys_sleep(u32 ms);
 
 // 系统调用处理函数列表
 handler_t syscall_table[SYSCALL_SIZE];
@@ -49,20 +57,10 @@ static u32 sys_test() {
     return 255;
 }
 
-// 系统调用 yield 的处理函数
-static void sys_yield() {
-    task_yield();
-}
-
-// 系统调用 sleep 的处理函数
-static void sys_sleep(u32 ms) {
-    task_sleep(ms);
-}
-
 // 系统调用 write 的处理函数
-static i32 sys_write(fd_t fd, char *buf, size_t len) {
+static i32 sys_write(fd_t fd, const void *buf, size_t len) {
     if (fd == STDOUT || fd == STDERR) {
-        return console_write(buf, len, TEXT);
+        return console_write((const char *)buf, len, TEXT);
     }
     // TODO:
     panic("unimplement write!!!");

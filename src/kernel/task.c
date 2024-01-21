@@ -383,6 +383,14 @@ void task_init() {
  ***     实现的系统调用处理     ***
  *******************************/
 
+void sys_yield() {
+    task_yield();
+}
+
+void sys_sleep(u32 ms) {
+    task_sleep(ms);
+}
+
 pid_t sys_getpid() {
     return current_task()->pid;
 }

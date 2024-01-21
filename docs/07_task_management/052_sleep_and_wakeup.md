@@ -197,16 +197,18 @@ void sleep(u32 ms) {
 
 根据 [<047 系统调用>][047_syscall] 中所述的系统调用处理流程，我们通过调用 `task_sleep()` 来实现系统调用 `sleep()` 的处理函数。
 
-> 代码位于 `kernel/syscall.c`
+> 代码位于 `kernel/task.c`
 
 ```c
 // 系统调用 sleep 的处理函数
-static void sys_sleep(u32 ms) {
+void sys_sleep(u32 ms) {
     task_sleep(ms);
 }
 ```
 
 并在系统调用初始化时，将 `sys_sleep()` 添加到系统调用处理列表对应的项中。
+
+> 代码位于 `kernel/syscall.c`
 
 ```c
 // 初始化系统调用

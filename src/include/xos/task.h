@@ -87,19 +87,4 @@ void task_wakeup();
 // 切换到用户模式
 void task_to_user_mode(target_t target);
 
-
-/*** 实现的系统调用处理 ***/
-
-pid_t sys_getpid();
-pid_t sys_getppid();
-
-// 系统调用 fork 的处理函数
-pid_t sys_fork();
-
-// 系统调用 exit 的处理函数
-void sys_exit(i32 status);
-
-// 系统调用 waitpid 的处理函数
-pid_t sys_waitpid(pid_t pid, i32 *status);
-
 #endif

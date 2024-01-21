@@ -22,7 +22,9 @@
     - [Hex Editor][hex-editor]
     - [Git Lens][git-lens]
 
-> 注：如果在使用 VS Code 出现 **“试图写入的管道不存在”** 的报错，参考这篇文章 [<Vscode SSH连接远端出的“过程试图写入的管道不存在”解决办法 - CSDN>][vscode-ssh-03] 来解决。
+> 注1：如果在使用 VS Code 还是出现 **“试图写入的管道不存在”** 的报错，参考这篇文章 [<Vscode SSH连接远端出的“过程试图写入的管道不存在”解决办法 - CSDN>][vscode-ssh-03] 来解决。
+
+> 注2：如果你之前安装了 clangd 插件，并且设置了 `"C_Cpp.intelliSenseEngine": "disable"`，而你需要在本项目使用 C/C++ 插件的话，需要对本项目创建一个工作区 (workspace)，然后在工作区的 `setting.json` 文件（一般位于工作区的 `.vscode/` 目录下），添加 `"C_Cpp.intelliSenseEngine": "enabled",` 即可。
 
 ## 3. NASM
 

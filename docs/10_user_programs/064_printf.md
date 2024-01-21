@@ -9,7 +9,7 @@
 我们使用系统调用 `write` 作为输出功能，它的定义如下：
 
 ```c
-i32 write(fd_t fd, char *buf, size_t len);
+i32 write(fd_t fd, const void *buf, size_t len);
 ```
 
 这个系统调用的功能是，将 `buf` 中的内容（长度为 `len`）输出到 `fd` 所指定的文件当中。
@@ -141,9 +141,9 @@ typedef enum syscall_t {
 
 ```c
 // 系统调用 write 的处理函数
-static i32 sys_write(fd_t fd, char *buf, size_t len) {
+static i32 sys_write(fd_t fd, const void *buf, size_t len) {
     if (fd == STDOUT || fd == STDERR) {
-        return console_write(buf, len, TEXT);
+        return console_write((const char *)buf, len, TEXT);
     }
     // TODO:
     panic("unimplement write!!!");
@@ -196,7 +196,7 @@ i32 write(fd_t fd, char *buf, size_t len);
 > 代码位于 `lib/syscall.c`
 
 ```c
-i32 write(fd_t fd, char *buf, size_t len) {
+i32 write(fd_t fd, const char *buf, size_t len) {
     return _syscall3(SYS_WRITE, fd, (u32)buf, len);
 }
 ```

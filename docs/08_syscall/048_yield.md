@@ -65,11 +65,11 @@ void kernel_init() {
 
 `yield()` 是主动放弃执行权，即主动进行调度，通过 `schedule()` 可以快速实现。
 
-> 代码位于 `kernel/syscall.c`
+> 代码位于 `kernel/task.c`
 
 ```c
 // 系统调用 yield 的处理函数
-static void sys_yield() {
+void sys_yield() {
     task_yield();
 }
 ```
