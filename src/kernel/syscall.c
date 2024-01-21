@@ -1,6 +1,7 @@
 #include <xos/syscall.h>
-#include <xos/task.h>
 #include <xos/interrupt.h>
+#include <xos/task.h>
+#include <xos/memory.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
 #include <xos/console.h>
@@ -60,7 +61,7 @@ static u32 sys_test() {
 // 系统调用 write 的处理函数
 static i32 sys_write(fd_t fd, const void *buf, size_t len) {
     if (fd == STDOUT || fd == STDERR) {
-        return console_write((const char *)buf, len, TEXT);
+        return console_write((char *)buf, len, TEXT);
     }
     // TODO:
     panic("unimplement write!!!");

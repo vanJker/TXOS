@@ -56,7 +56,7 @@ void sleep(u32 ms) {
     _syscall1(SYS_SLEEP, ms);
 }
 
-i32 write(fd_t fd, char *buf, size_t len) {
+i32 write(fd_t fd, const void *buf, size_t len) {
     return _syscall3(SYS_WRITE, (u32)fd, (u32)buf, (u32)len);
 }
 

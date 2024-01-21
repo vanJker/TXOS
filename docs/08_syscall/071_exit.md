@@ -115,7 +115,7 @@ void sys_exit(i32 status) {
     current->vmap = NULL;
 
     // 释放当前进程的页目录、页表，以及页框，即释放用户空间
-    free_pde();
+    free_pgdir();
 
     // 将当前进程的所有子进程的 `ppid` 字段，设置为当前进程的 `ppid`（进程关系的继承）
     for (size_t i = 2; i < NUM_TASKS; i++) {
@@ -141,10 +141,10 @@ void sys_exit(i32 status) {
 //--> include/xos/memory.h
 
 // 释放当前任务的页目录（表示的用户空间）
-void free_pde();
+void free_pgdir();
 ```
 
-`sys_exit()` 使用了 `free_pde()` 来释放进程的页表，类似的，`free_pde()` 函数与 [<>] 一节实现的 `copy_pde()` 是镜像对应的。当然 `free_pde()` 会更加简单直接一点，主要逻辑是遍历页表并释放对应页即可。
+`sys_exit()` 使用了 `free_pgdir()` 来释放进程的页表，类似的，`free_pgdir()` 函数与 [<>] 一节实现的 `copy_pgdir()` 是镜像对应的。当然 `free_pgdir()` 会更加简单直接一点，主要逻辑是遍历页表并释放对应页即可。
 
 - 页目录是通过内核堆内存分配的，使用了 `kalloc_page()`
 - 页表和页框都是通过物理数组来分配的，使用的是 `alloc_page()`
@@ -155,8 +155,8 @@ void free_pde();
 //--> kernel/memory.c
 
 // 释放当前任务的页目录（表示的用户空间）
-void free_pde() {
-    LOGK("Before free_pde(), free pages: %d", mm.free_pages);
+void free_pgdir() {
+    LOGK("Before free_pgdir(), free pages: %d", mm.free_pages);
 
     task_t *current = current_task();
 
@@ -181,7 +181,7 @@ void free_pde() {
     // 释放页目录
     kfree_page((u32)page_dir, 1);
 
-    LOGK("After free_pde(), free pages: %d", mm.free_pages);
+    LOGK("After free_pgdir(), free pages: %d", mm.free_pages);
 }
 ```
 
@@ -217,6 +217,6 @@ static void user_init_thread() {
 
 预期为：
 
-- `free_pde()` 中释放了两页物理内存，一页栈内存，一页对应页表的内存
+- `free_pgdir()` 中释放了两页物理内存，一页栈内存，一页对应页表的内存
 - 可用物理页在减少，因为子进程调用 `exit` 后只是陷入“僵死”，但是并没有释放 PCB 和内核栈所在的物理页，同时这也导致了新进程的 PID 一直在增大
 - 最终无法分配可用的空闲进程，导致触发 `panic`

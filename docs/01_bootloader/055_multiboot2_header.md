@@ -122,7 +122,7 @@ grub 引导的系统文件必须为 iso 格式的，接下来我们就配置下 
 
 ```makefile
 # iso 格式的内核镜像
-ISO := $(TARGET)/kernel.iso
+ISO := $(TARGET)/systerm.iso
 
 # grub 启动的配置文件
 GRUB_CFG := $(SRC)/utils/grub.cfg
@@ -154,7 +154,7 @@ $(ISO): $(KERNEL_ELF) $(GRUB_CFG)
 ...
 boot: cdrom
 ...
-ata0-master: type=cdrom, path="target/kernel.iso", status=inserted
+ata0-master: type=cdrom, path="target/systerm.iso", status=inserted
 ...
 ```
 

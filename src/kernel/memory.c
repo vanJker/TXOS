@@ -249,13 +249,13 @@ void page_entry_init(page_entry_t *entry, u32 index) {
 static void kernel_vmap_init();
 // 初始化内核地址空间映射（恒等映射）
 void kernel_map_init() {
-    page_entry_t *kpage_dir = (page_entry_t *)(kmm.kernel_page_dir);
-    memset(kpage_dir, 0, PAGE_SIZE); // 清空内核页目录
+    page_entry_t *kpgdir = (page_entry_t *)(kmm.kernel_page_dir);
+    memset(kpgdir, 0, PAGE_SIZE); // 清空内核页目录
 
     idx_t index = 0; // 页索引
     // 将内核页目录项设置为对应的内核页表索引
     for (idx_t pde_idx = 0; pde_idx < kmm.kpgtbl_len; pde_idx++) {
-        page_entry_t *pde = &kpage_dir[pde_idx];
+        page_entry_t *pde = &kpgdir[pde_idx];
         page_entry_t *kpage_table = (page_entry_t *)(kmm.kernel_page_table[pde_idx]);
 
         page_entry_init(pde, PAGE_IDX(kpage_table));
@@ -275,11 +275,11 @@ void kernel_map_init() {
     }
     
     // 将最后一个页表指向页目录自己，方便修改页目录个页表
-    page_entry_t *entry = &kpage_dir[PAGE_ENTRY_SIZE - 1];
+    page_entry_t *entry = &kpgdir[PAGE_ENTRY_SIZE - 1];
     page_entry_init(entry, PAGE_IDX(kmm.kernel_page_dir));
 
     // 设置 cr3 寄存器
-    set_cr3((u32)kpage_dir);
+    set_cr3((u32)kpgdir);
 
     // 启用分页机制
     enable_page();
@@ -457,7 +457,7 @@ u32 copy_page(u32 vaddr) {
 }
 
 // 拷贝当前任务的页目录（表示的用户空间）
-page_entry_t *copy_pde() {
+page_entry_t *copy_pgdir() {
     task_t *current = current_task();
 
     page_entry_t *page_dir = (page_entry_t *)kalloc_page(1);
@@ -496,8 +496,8 @@ page_entry_t *copy_pde() {
 }
 
 // 释放当前任务的页目录（表示的用户空间）
-void free_pde() {
-    LOGK("Before free_pde(), free pages: %d\n", mm.free_pages);
+void free_pgdir() {
+    LOGK("Before free_pgdir(), free pages: %d\n", mm.free_pages);
 
     task_t *current = current_task();
 
@@ -522,7 +522,7 @@ void free_pde() {
     // 释放页目录
     kfree_page((u32)page_dir, 1);
 
-    LOGK("After free_pde(), free pages: %d\n", mm.free_pages);
+    LOGK("After free_pgdir(), free pages: %d\n", mm.free_pages);
 }
 
 // 内核页目录的物理地址

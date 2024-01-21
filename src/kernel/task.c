@@ -288,7 +288,7 @@ static void real_task_to_user_mode(target_t target) {
     bitmap_init(current->vmap, buf, PAGE_SIZE, KERNEL_MEMORY_SIZE / PAGE_SIZE);
 
     // 设置用户任务/进程页表
-    current->page_dir = (u32)copy_pde();
+    current->page_dir = (u32)copy_pgdir();
     set_cr3(current->page_dir);
 
     // 内核栈的最高有效地址
@@ -426,7 +426,7 @@ pid_t sys_fork() {
     child->vmap->bits = buf;
 
     // 拷贝当前进程的页目录
-    child->page_dir = (u32)copy_pde();
+    child->page_dir = (u32)copy_pgdir();
 
     // 设置子进程的内核栈
     task_build_stack(child);
@@ -458,7 +458,7 @@ void sys_exit(i32 status) {
     current->vmap = NULL;
 
     // 释放当前进程的页目录、页表，以及页框，即释放用户空间
-    free_pde();
+    free_pgdir();
 
     // 将当前进程的所有子进程的 `ppid` 字段，设置为当前进程的 `ppid`（进程关系的继承）
     for (size_t i = 2; i < NUM_TASKS; i++) {

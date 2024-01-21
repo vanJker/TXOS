@@ -4,7 +4,7 @@
 
 本节的主要任务就是将用户栈映射到 $0x7e00000$ ~ $0x8800000$ 这 $10M$ 虚拟地址空间处。
 
-![](./image/../images/memory_map_05.drawio.svg)
+![](./images/memory_map_05.drawio.svg)
 
 ## 2. 缺页异常
 
@@ -66,7 +66,7 @@ u32 get_cr2() {
 
 ```c
 // 拷贝当前任务的页目录
-page_entry_t *copy_pde() {
+page_entry_t *copy_pgdir() {
     task_t *current = current_task();
     page_entry_t *pde = (page_entry_t *)kalloc_page(1); // TODO: free
     memcpy((void *)pde, (void *)current->page_dir, PAGE_SIZE);
@@ -97,7 +97,7 @@ static void real_task_to_user_mode(target_t target) {
     bitmap_init(current->vmap, buf, PAGE_SIZE, KERNEL_MEMORY_SIZE / PAGE_SIZE);
 
     // 设置用户任务/进程页表
-    current->page_dir = (u32)copy_pde();
+    current->page_dir = (u32)copy_pgdir();
     set_cr3(current->page_dir);
 
     ...
@@ -158,7 +158,7 @@ typedef struct page_error_code_t {
 } _packed page_error_code_t;
 ```
 
-### 3.5 缺页异常处理
+### 3.5 Lazy Allocation
 
 有了之前实现的功能，现在我们可以来实现缺页异常的处理函数。
 

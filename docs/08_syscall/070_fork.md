@@ -109,7 +109,7 @@ pid_t sys_fork() {
     child->vmap->bits = buf;
 
     // 拷贝当前进程的页目录
-    child->page_dir = (u32)copy_pde();
+    child->page_dir = (u32)copy_pgdir();
 
     // 设置子进程的内核栈
     task_build_stack(child);
@@ -186,7 +186,7 @@ static void task_build_stack(task_t *task) {
 //--> kernel/memory.c
 
 // 拷贝当前任务的页目录（表示的用户空间）
-page_entry_t *copy_pde() {
+page_entry_t *copy_pgdir() {
     task_t *current = current_task();
 
     // 拷贝当前进程的页目录
@@ -243,7 +243,7 @@ page_entry_t *copy_pde() {
 ```c
 #define PDE_RECUR_MASK 0xFFC00000 // 递归页表的掩码
 
-page_entry_t *copy_pde() {
+page_entry_t *copy_pgdir() {
     ...
     for (size_t pde_idx = 2; pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
         ...

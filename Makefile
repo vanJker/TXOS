@@ -6,7 +6,7 @@ SRC	:= ./src
 IMG := $(TARGET)/master.img
 
 # iso 格式的内核镜像
-ISO := $(TARGET)/kernel.iso
+ISO := $(TARGET)/systerm.iso
 
 # grub 启动的配置文件
 GRUB_CFG := $(SRC)/utils/grub.cfg

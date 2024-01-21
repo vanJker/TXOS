@@ -84,10 +84,10 @@ page_entry_t *get_pde();
 page_entry_t *get_pte(u32 vaddr, bool create);
 
 // 拷贝当前任务的页目录（表示的用户空间）
-page_entry_t *copy_pde();
+page_entry_t *copy_pgdir();
 
 // 释放当前任务的页目录（表示的用户空间）
-void free_pde();
+void free_pgdir();
 
 // 将虚拟地址 vaddr 所在的页拷贝到一个空闲物理页，并返回该物理页的物理地址
 u32 copy_page(u32 vaddr);

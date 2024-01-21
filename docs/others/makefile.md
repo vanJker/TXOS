@@ -15,7 +15,7 @@ LOADER_BIN := $(TARGET)/bootloader/loader.bin   # loader 目标文件
  
 KERNEL_LINKER := $(SRC)/kernel/linker.ld    # kernel 的链接脚本（已弃用）
 KERNEL_ENTRY := 0x10000                     # kernel 的 text section 起始地址
-KERNEL_ELF := $(TARGET)/kernel.elf          # kernel 的 elf 格式的目标文件
+kernel.elf := $(TARGET)/kernel.elf          # kernel 的 elf 格式的目标文件
 KERNEL_BIN := $(TARGET)/kernel.bin          # kernel 的二进制格式的目标文件
 KERNEL_SYM := $(TARGET)/kernel.map          # kernel 的符号表
 
@@ -88,7 +88,7 @@ $(TARGET)/lib/%.o: $(SRC)/lib/%.c
 	gcc $(CFLAGS) $(DEBUG_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
 # kernel 的 elf 格式的目标文件的生成规则
-$(KERNEL_ELF): $(KERNEL_OBJS) $(LIB_OBJS)
+$(kernel.elf): $(KERNEL_OBJS) $(LIB_OBJS)
 	$(shell mkdir -p $(dir $@))
 	ld $(LDFLAGS) $^ -o $@
 

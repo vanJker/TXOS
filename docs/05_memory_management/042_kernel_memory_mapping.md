@@ -175,13 +175,13 @@ void memory_init() {
 ```c
 // 初始化内核地址空间映射（恒等映射）
 void kernel_map_init() {
-    page_entry_t *kpage_dir = (page_entry_t *)(kmm.kernel_page_dir);
-    memset(kpage_dir, 0, PAGE_SIZE); // 清空内核页目录
+    page_entry_t *kpgdir = (page_entry_t *)(kmm.kernel_page_dir);
+    memset(kpgdir, 0, PAGE_SIZE); // 清空内核页目录
 
     idx_t index = 0; // 页索引
     // 将内核页目录项设置为对应的内核页表索引
     for (idx_t pde_idx = 0; pde_idx < kmm.kpgtbl_len; pde_idx++) {
-        page_entry_t *pde = &kpage_dir[pde_idx];
+        page_entry_t *pde = &kpgdir[pde_idx];
         page_entry_t *kpage_table = (page_entry_t *)(kmm.kernel_page_table[pde_idx]);
 
         page_entry_init(pde, PAGE_IDX(kpage_table));
@@ -201,11 +201,11 @@ void kernel_map_init() {
     }
     
     // 将最后一个页表指向页目录自己，方便修改页目录个页表
-    page_entry_t *entry = &kpage_dir[PAGE_ENTRY_SIZE - 1];
+    page_entry_t *entry = &kpgdir[PAGE_ENTRY_SIZE - 1];
     page_entry_init(entry, PAGE_IDX(kmm.kernel_page_dir));
 
     // 设置 cr3 寄存器
-    set_cr3((u32)kpage_dir);
+    set_cr3((u32)kpgdir);
 
     // 启用分页机制
     enable_page();
@@ -301,8 +301,8 @@ void memory_test() {
     u32 paddr2 = 0x1500000; // 物理地址必须要确定存在（必须在 32M 内）
     u32 table = 0x900000;   // 页表也必须是物理地址
 
-    page_entry_t *kpage_dir = get_pde(); // 获取内核页目录
-    page_entry_t *pde = &kpage_dir[PDE_IDX(vaddr)];
+    page_entry_t *kpgdir = get_pde(); // 获取内核页目录
+    page_entry_t *pde = &kpgdir[PDE_IDX(vaddr)];
     page_entry_init(pde, PAGE_IDX(table)); // 映射 vaddr 对应的内核页目录项
 
     page_entry_t *kpage_table = get_pte(vaddr); // 获取 vaddr 对应的内核页表

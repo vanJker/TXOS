@@ -143,7 +143,7 @@ typedef enum syscall_t {
 // 系统调用 write 的处理函数
 static i32 sys_write(fd_t fd, const void *buf, size_t len) {
     if (fd == STDOUT || fd == STDERR) {
-        return console_write((const char *)buf, len, TEXT);
+        return console_write((char *)buf, len, TEXT);
     }
     // TODO:
     panic("unimplement write!!!");
@@ -188,7 +188,7 @@ void syscall_init() {
 ```c
 /***** 声明用户态封装后的系统调用原型 *****/
 ...
-i32 write(fd_t fd, char *buf, size_t len);
+i32 write(fd_t fd, const void *buf, size_t len);
 ```
 
 在用户空间实现系统调用 `write` 的用户态逻辑，即传入参数和进行中断触发：
@@ -196,7 +196,7 @@ i32 write(fd_t fd, char *buf, size_t len);
 > 代码位于 `lib/syscall.c`
 
 ```c
-i32 write(fd_t fd, const char *buf, size_t len) {
+i32 write(fd_t fd, const void *buf, size_t len) {
     return _syscall3(SYS_WRITE, fd, (u32)buf, len);
 }
 ```
