@@ -37,8 +37,6 @@ void cmos_write(u8 addr, u8 value);
 
 /* time.c */
 
-typedef u32 time_t;
-
 typedef struct time_val {
     i32 tm_sec;     // 秒数 [0, 59]
     i32 tm_min;     // 分钟数 [0, 59]
@@ -81,5 +79,9 @@ void pit_init();
 
 // 初始化时钟
 void clock_init();
+
+/*** 实现的系统调用处理 ***/
+
+time_t sys_time();
 
 #endif

@@ -8,6 +8,9 @@
 #define DAY    (24 * HOUR)  // 每天的秒数
 #define YEAR   (365 * DAY)  // 每年的秒数（以 365 天计算）
 
+// 系统启动时的时间戳 (从 1970-01-01 00:00:00 开始的秒数)
+time_t startup_time;
+
 // 每个月开始时的已经过去天数
 static int month[13] = {
     0, // 这里占位，没有 0 月，从 1 月开始
@@ -130,7 +133,7 @@ void time_init() {
     time_val time;
     time_read(&time);
 
-    u32 startup_time = mktime(&time);
+    startup_time = mktime(&time);
 
     LOGK("startup time: %d%d-%02d-%02d %02d:%02d:%02d\n",
             time.century,

@@ -81,5 +81,9 @@ void exit(int status) {
 }
 
 pid_t waitpid(pid_t pid, int *status) {
-    return _syscall2(SYS_WAITPID, pid, status);
+    return _syscall2(SYS_WAITPID, pid, (u32)status);
+}
+
+time_t time() {
+    return _syscall0(SYS_TIME);
 }

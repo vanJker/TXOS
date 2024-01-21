@@ -89,3 +89,13 @@ void clock_init() {
     set_interrupt_handler(IRQ_CLOCK, clock_handler);
     set_interrupt_mask(IRQ_CLOCK, true);
 }
+
+/*******************************
+ ***     实现的系统调用处理     ***
+ *******************************/
+
+extern time_t startup_time;
+
+time_t sys_time() {
+    return startup_time + (jiffies * jiffy) / 1000;
+}

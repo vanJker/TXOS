@@ -5,6 +5,7 @@
 #include <xos/debug.h>
 #include <xos/console.h>
 #include <xos/memory.h>
+#include <xos/time.h>
 
 // 系统调用处理函数列表
 handler_t syscall_table[SYSCALL_SIZE];
@@ -84,4 +85,5 @@ void syscall_init() {
     syscall_table[SYS_FORK]     = sys_fork;
     syscall_table[SYS_EXIT]     = sys_exit;
     syscall_table[SYS_WAITPID]  = sys_waitpid;
+    syscall_table[SYS_TIME]     = sys_time;
 }

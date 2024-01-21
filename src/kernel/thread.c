@@ -45,10 +45,10 @@ static void user_init_thread() {
             printf("fork after parent: fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
             // sleep(1000);
             pid_t childpid = waitpid(pid, NULL);
-            printf("wait pid = %d, status = %d, counter = %d\n", childpid, status, counter++);
+            printf("wait pid = %d, status = %d, time = %d\n", childpid, status, time());
         }
 
-        sleep(2000);
+        sleep(1000);
     }
 }
 
