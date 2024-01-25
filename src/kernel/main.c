@@ -13,6 +13,7 @@ extern void syscall_init();
 extern void keyboard_init();
 extern void tss_init();
 extern void arena_init();
+extern void ata_init();
 
 void kernel_init() {
     console_init();
@@ -26,6 +27,7 @@ void kernel_init() {
     keyboard_init();
     time_init();
     // rtc_init();
+    ata_init();
     task_init();
     syscall_init();
 

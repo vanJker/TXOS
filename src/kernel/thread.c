@@ -33,20 +33,20 @@ static void user_init_thread() {
     while (true) {
         // printf("task in user mode can use printf! %d\n", counter++);
         // printf("init thread pid: %d, ppid: %d, counter: %d\n", get_pid(), get_ppid(), counter++);
-        pid_t pid = fork();
+        // pid_t pid = fork();
 
-        if (pid == 0) {
-            // child process
-            printf("fork after child:  fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
-            // sleep(1000);
-            exit(0);
-        } else {
-            // parent process
-            printf("fork after parent: fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
-            // sleep(1000);
-            pid_t childpid = waitpid(pid, NULL);
-            printf("wait pid = %d, status = %d, time = %d\n", childpid, status, time());
-        }
+        // if (pid == 0) {
+        //     // child process
+        //     printf("fork after child:  fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
+        //     // sleep(1000);
+        //     exit(0);
+        // } else {
+        //     // parent process
+        //     printf("fork after parent: fork() = %d, pid = %d, ppid = %d\n", pid, get_pid(), get_ppid());
+        //     // sleep(1000);
+        //     pid_t childpid = waitpid(pid, NULL);
+        //     printf("wait pid = %d, status = %d, time = %d\n", childpid, status, time());
+        // }
 
         sleep(1000);
     }

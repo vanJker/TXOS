@@ -2,14 +2,77 @@
 
 ## 1. 原理说明
 
-### 1.1 硬盘读写
+### 1.1 硬盘相关概念
+<details>
+<summary>Hard disk</summary>
 
-- CHS 模式 / Cylinder / Head / Sector
-- LBA 模式 / Logical Block Address
+![](./images/harddisk_1.jpeg)
+</details>
 
-LBA28，总共能访问 128GB 的磁盘空间（因为一个扇区有 512 字节，所以总共有 2^(28+9) Bytes = 128GB）。
+<details>
+<summary>Platter</summary>
 
-### 1.2 硬盘控制端口
+![](./images/harddisk_2.jpg)
+</details>
+
+<details>
+<summary>Spindle</summary>
+
+![](./images/harddisk_3.jpg)
+</details>
+
+<details>
+<summary>Track</summary>
+
+![](./images/harddisk_4.jpg)
+</details>
+
+<details>
+<summary>Cylinder</summary>
+
+![](./images/harddisk_5.jpg)
+</details>
+
+<details>
+<summary>Read/Write head</summary>
+
+![](./images/harddisk_6.jpg)
+</details>
+
+<details>
+<summary>Sector</summary>
+
+![](./images/harddisk_7.jpg)
+</details>
+
+- 扇区 (sector)：是硬盘读写的最小单位，最少 1 个扇区，最多 256 个扇区
+- 机械臂 (actuator) 的寻道时间是硬盘性能的主要瓶颈
+- 一般情况下一个磁道 (track) 有 63 个扇区，这主要是因为 BIOS 最大只能支持这么多扇区
+- 磁道 (track) 从外侧计数，所以一般情况下 C 盘的读写速度最快
+
+### 1.2 IDE/ATA PIO Mode
+
+Programmed Input Output (PIO) 可编程的输入输出
+
+在 IO 中，端口 (Port) 是指外部设备内部的寄存器，这与网络中的端口 (Port) 需要进行区分。
+
+| 标准 | 全称 | 中文翻译 | 制定者/组织 |
+| --- | ---- | ------- | --------- |
+| IDE | Integrated Drive Electronics| 集成电子驱动器 | Western Digital Corporation 西部数据 |
+| ATA | Advanced Technology Attachment |  先进技术附件 | American Natioal Standards Institute (ANSI) 美国国家标准学会 |
+| PATA | Parallel ATA | 并行 ATA | |
+| SATA | Serial ATA | 串行 ATA | Serial ATA International Organization (SATA-IO) 国际串行ATA组织 |
+
+> 一般说来，ATA 是一个控制器技术，而 IDE 是一个匹配它的磁盘驱动器技术，但是两个术语经常可以互用。SATA (Serial ATA) 于 2002 年推出后，原有的 ATA 改名为 PATA (并行高技术配置，Parallel ATA)。
+
+### 1.3 硬盘读写
+
+- CHS 模式: Cylinder Head Sector
+- LBA 模式: Logical Block Address
+
+LBA28，总共能访问 128GB 的磁盘空间（因为一个扇区有 512 字节，所以总共有 $2^{(28+9)} Bytes = 128GB$）。
+
+### 1.4 硬盘控制端口
 
 | Primary 通道            | Secondary 通道 | in 操作      | out 操作     |
 | ----------------------- | -------------- | ------------ | ------------ |
