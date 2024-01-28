@@ -1,6 +1,7 @@
 #include <xos/ata.h>
 #include <xos/stdio.h>
 #include <xos/io.h>
+#include <xos/interrupt.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
 
@@ -60,6 +61,9 @@
 
 #define ATA_MASTER_SELECTOR 0b11100000
 #define ATA_SLAVE_SELECTOR  0b11110000
+
+// 共两条总线
+ata_bus_t buses[ATA_BUS_NR];
 
 // 检测错误
 static u32 ata_error(ata_bus_t *bus) {
@@ -142,6 +146,8 @@ static void ata_pio_write_sector(ata_disk_t *disk, u16 *buf) {
 
 i32 ata_pio_read(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
     assert(count > 0);          // 保证读取扇区数不为 0
+    ASSERT_IRQ_DISABLE();       // 保证为外中断禁止
+
     ata_bus_t *bus = disk->bus; // 对应的 ATA 总线
     mutexlock_acquire(&bus->lock);  // 获取总线的锁
     
@@ -159,7 +165,15 @@ i32 ata_pio_read(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
 
     // 持续读取磁盘对应的扇区内容直至读取完成
     for (size_t i = 0; i < count; i++) {
+        task_t *task = current_task();
+        // 如果是初始化时调用硬盘读写功能，则使用同步方式
+        if (task->state == TASK_RUNNING) {
+            // 阻塞自己直到中断带来表示就绪
+            bus->waiter = task;
+            task_block(task, NULL, TASK_BLOCKED);
+        }
         ata_busy_wait(bus, ATA_SR_DRQ); // 等待 PIO 数据准备完成
+        
         u32 offset = ((u32)buf + i * SECTOR_SIZE);
         ata_pio_read_sector(disk, (u16 *)offset);
     }
@@ -170,6 +184,8 @@ i32 ata_pio_read(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
 
 i32 ata_pio_write(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
     assert(count > 0);          // 保证读取扇区数不为 0
+    ASSERT_IRQ_DISABLE();       // 保证为外中断禁止
+
     ata_bus_t *bus = disk->bus; // 对应的 ATA 总线
     mutexlock_acquire(&bus->lock);  // 获取总线的锁
     
@@ -189,6 +205,12 @@ i32 ata_pio_write(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
     for (size_t i = 0; i < count; i++) {
         u32 offset = ((u32)buf + i * SECTOR_SIZE);
         ata_pio_write_sector(disk, (u16 *)offset);
+
+        task_t *task = current_task();
+        if (task->state == TASK_RUNNING) {
+            bus->waiter = task;
+            task_block(task, NULL, TASK_BLOCKED);
+        }
         ata_busy_wait(bus, ATA_SR_NULL); // 等待写入数据完成
     }
 
@@ -196,8 +218,26 @@ i32 ata_pio_write(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
     return 0;
 }
 
-// 共两条总线
-ata_bus_t buses[ATA_BUS_NR];
+// 磁盘中断处理
+void ata_handler(int vector) {
+    assert(vector == 0x2e || vector == 0x2f);
+
+    // 向中断控制器发送中断处理结束信号
+    send_eoi(vector);
+
+    // 获取中断向量对应的 ATA 总线
+    ata_bus_t *bus = &buses[vector - IRQ_MASTER_NR - IRQ_HARDDISK_1];
+
+    // 读取常规状态寄存器，表示中断处理结束
+    u8 state = inb(bus->iobase + ATA_IO_STATUS);
+    LOGK("hard disk interrupt vector %d state 0x%x\n", vector, state);
+
+    // 如果有等待中断的进程，则取消它的阻塞
+    if (bus->waiter) {
+        task_unblock(bus->waiter);
+        bus->waiter = NULL;
+    }
+}
 
 static void ata_bus_init() {
     for (size_t bidx = 0; bidx < ATA_BUS_NR; bidx++) {
@@ -205,6 +245,7 @@ static void ata_bus_init() {
         sprintf(bus->name, "ata%u", bidx);
         mutexlock_init(&bus->lock);
         bus->active = NULL;
+        bus->waiter = NULL;
 
         if (bidx == 0) {
             // Primary bus
@@ -233,21 +274,15 @@ static void ata_bus_init() {
     }
 }
 
-#include <xos/memory.h>
-#include <xos/string.h>
 // ATA 总线和磁盘初始化
 void ata_init() {
     LOGK("ata init...\n");
     ata_bus_init();
 
-    void *buf = (void *)kalloc_page(1);
-    BMB;
-    LOGK("read buffer 0x%p\n", buf);
-    ata_pio_read(&buses[0].disks[0], buf, 1, 0);
-    BMB;
-    memset(buf, 0x5a, SECTOR_SIZE);
-    BMB;
-    ata_pio_write(&buses[0].disks[0], buf, 1, 1);
-    LOGK("write buffer 0x%p\n", buf);
-    kfree_page((u32)buf, 1);
+    // 注册硬盘中断，并取消对应的屏蔽字
+    set_interrupt_handler(IRQ_HARDDISK_1, ata_handler);
+    set_interrupt_handler(IRQ_HARDDISK_2, ata_handler);
+    set_interrupt_mask(IRQ_HARDDISK_1, true);
+    set_interrupt_mask(IRQ_HARDDISK_2, true);
+    set_interrupt_mask(IRQ_CASCADE, true);
 }

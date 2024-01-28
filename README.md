@@ -1,6 +1,6 @@
-# XOS
+# TXOS
 
-A simple OS written in C.
+The X of Operating System.
 
 ## Memory Management
 

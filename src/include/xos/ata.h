@@ -3,6 +3,7 @@
 
 #include <xos/types.h>
 #include <xos/mutex.h>
+#include <xos/task.h>
 
 // 扇区大小 (512 Byte)
 #define SECTOR_SIZE 512
@@ -26,9 +27,10 @@ typedef struct ata_bus_t {
     char name[8];                   // 总线名称
     mutexlock_t lock;               // 总线互斥锁
     u16 iobase;                     // 总线 I/O 寄存器基址
-    u16 ctlbase;                   // 总线控制寄存器基址
+    u16 ctlbase;                    // 总线控制寄存器基址
     ata_disk_t disks[ATA_DISK_NR];  // 挂载的磁盘
     ata_disk_t *active;             // 当前选择的磁盘
+    task_t *waiter;                 // 等待总线忙碌结束的进程
 } ata_bus_t;
 
 // 从磁盘 disk 的第 lba 个扇区开始，读取连续 count 个扇区的数据到缓冲区 buf
