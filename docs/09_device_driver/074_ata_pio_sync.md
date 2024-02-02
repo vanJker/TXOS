@@ -287,7 +287,7 @@ ATAPI 驱动器在它们的 `LBA_LOW` 和 `LBA_HIGH` I/O 端口上设置值，�
 在 CHS 模式下访问扇区基本上与进行 28 位 LBA 读写相同，除了在写入 bit Flag s端口时保持 LBA 位(值= 0x40)关闭，并且向IO 端口发送各种 CHS 字节而不是 LBA 字节。
 </details>
 
-## 10. 代码实现
+## 10. 代码分析
 
 和 [<006 硬盘读写>](../01_bootloader/006_disk_read_write.md) 一致，本节采用的也是 **28 位 LBA** 的寻址方式。
 
@@ -518,6 +518,7 @@ static i32 ata_busy_wait(ata_bus_t *bus, u8 mask) {
         // 如果有错误，则进行错误检测
         if (state & ATA_SR_ERR) {
             ata_error(bus);
+            return ATA_SR_ERR;
         }
         // 如果驱动器繁忙，则继续忙等待
         if (state & ATA_SR_BSY) {

@@ -12,6 +12,10 @@
 #define false 0
 #endif
 
+#define CONCAT(x, y) x##y
+#define RESERVED_TOKEN(x, y) CONCAT(x, y)
+#define RESERVED RESERVED_TOKEN(reserved, __LINE__)
+
 // gcc 用于定义紧凑的结构体
 #define _packed __attribute__((packed))
 

@@ -27,8 +27,6 @@ void idle_thread() {
 
 // 初始化任务 init 的用户态线程
 static void user_init_thread() {
-    test();
-
     while (true) {
         sleep(1000);
     }

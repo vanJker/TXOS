@@ -2,6 +2,8 @@
 #include <xos/stdio.h>
 #include <xos/io.h>
 #include <xos/interrupt.h>
+#include <xos/memory.h>
+#include <xos/string.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
 
@@ -65,6 +67,43 @@
 // 共两条总线
 ata_bus_t buses[ATA_BUS_NR];
 
+// 硬盘识别信息
+typedef struct ata_identify_data_t
+{
+    u16 config;                 // 00 General configuration bits
+    u16 cylinders;              // 01 obsolete
+    u16 RESERVED;               // 02
+    u16 heads;                  // 03 obsolete
+    u16 RESERVED[5 - 3];        // 04 ~ 05
+    u16 sectors;                // 06 obsolete
+    u16 RESERVED[9 - 6];        // 07 ~ 09
+    u8  serial[20];             // 10 ~ 19 序列号
+    u16 RESERVED[22 - 19];      // 10 ~ 22
+    u8  firmware[8];            // 23 ~ 26 固件版本
+    u8  model[40];              // 27 ~ 46 模型数
+    u8  drq_sectors;            // 47 可用扇区数量
+    u8  RESERVED[3];            // 48
+    u16 capabilities;           // 49 能力
+    u16 RESERVED[59 - 49];      // 50 ~ 59
+    u32 total_lba;              // 60 ~ 61
+    u16 RESERVED;               // 62
+    u16 mdma_mode;              // 63
+    u8  RESERVED;               // 64
+    u8  pio_mode;               // 64
+    u16 RESERVED[79 - 64];      // 65 ~ 79 参见 ATA specification
+    u16 major_version;          // 80 主版本
+    u16 minor_version;          // 81 副版本
+    u16 commmand_sets[87 - 81]; // 82 ~ 87 支持的命令集
+    u16 RESERVED[118 - 87];     // 88 ~ 118
+    u16 support_settings;       // 119
+    u16 enable_settings;        // 120
+    u16 RESERVED[221 - 120];    // 121 ~ 221
+    u16 transport_major;        // 222
+    u16 transport_minor;        // 223
+    u16 RESERVED[254 - 223];    // 224 ~ 254
+    u16 integrity;              // 255 校验和
+} _packed ata_identify_data_t;
+
 // 检测错误
 static u32 ata_error(ata_bus_t *bus) {
     u8 error = inb(bus->iobase + ATA_IO_ERROR);
@@ -86,14 +125,16 @@ static u32 ata_error(ata_bus_t *bus) {
         LOGK("Bad block.\n");
 }
 
-// 忙等待 (mask 用于指定等待的事件，为 0 则直到表示繁忙结束)
+// 忙等待 (mask 用于指定等待的事件，为 ATA_SR_NULL (0) 则直到表示繁忙结束)
 static i32 ata_busy_wait(ata_bus_t *bus, u8 mask) {
+    // TODO: reset when controller detects error and timeout
     while (true) {
         // 从备用状态寄存器读取状态
         u8 state = inb(bus->ctlbase + ATA_CTL_ALT_STATUS);
         // 如果有错误，则进行错误检测
         if (state & ATA_SR_ERR) {
             ata_error(bus);
+            return ATA_SR_ERR;
         }
         // 如果驱动器繁忙，则继续忙等待
         if (state & ATA_SR_BSY) {
@@ -218,7 +259,78 @@ i32 ata_pio_write(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
     return 0;
 }
 
-// 磁盘中断处理
+// 软件方法重置驱动器
+static void ata_reset_derive(ata_bus_t *bus) {
+    outb(bus->ctlbase + ATA_CTL_DEV_CONTROL, ATA_CTRL_SRST);
+    ata_busy_wait(bus, ATA_SR_NULL);
+    outb(bus->ctlbase + ATA_CTL_DEV_CONTROL, 0);
+    ata_busy_wait(bus, ATA_SR_NULL);
+}
+
+// 字节序由 ATA string 转 C string
+static void ata_swap_words(u8 *buf, size_t len) {
+    for (size_t i = 0; i < len; i += 2) {
+        u8 temp = buf[i];
+        buf[i] = buf[i + 1];
+        buf[i + 1] = temp;
+    }
+    buf[len - 1] = EOS;
+}
+
+// 识别硬盘
+static i32 ata_identify(ata_disk_t *disk, u16 *buf) {
+    LOGK("identifing disk %s...\n", disk->name);
+
+    i32 ret;
+    mutexlock_acquire(&disk->bus->lock);
+
+    // 选择磁盘
+    // ata_select_disk(disk);
+    outb(disk->bus->iobase + ATA_IO_DEVICE, disk->selector & (~0x40));
+
+    // 设置 LBA 端口
+    ata_select_sector(disk, 0, 0);
+
+    // 硬盘识别命令
+    outb(disk->bus->iobase + ATA_IO_COMMAND, ATA_CMD_IDENTIFY);
+
+    // 检测设备是否存在，并等待识别数据准备就绪
+    if (inb(disk->bus->ctlbase + ATA_CTL_ALT_STATUS) == 0 ||
+        ata_busy_wait(disk->bus, ATA_SR_DRQ) == ATA_SR_ERR
+    ) {
+        LOGK("disk %s does not exist...\n", disk->name);
+        ret = EOF;
+        goto rollback;
+    }
+
+    // 获取硬盘识别信息
+    ata_pio_read_sector(disk, buf);
+    ata_identify_data_t *data = (ata_identify_data_t *)buf;
+
+    // total number of user addressable sectors
+    disk->total_lba = data->total_lba;
+    LOGK("disk %s total sectors %d\n", disk->name, data->total_lba);
+
+    // serial number
+    ata_swap_words(data->serial, sizeof(data->serial));
+    LOGK("disk %s serial number %s\n", disk->name, data->serial);
+
+    // firmware revision
+    ata_swap_words(data->firmware, sizeof(data->firmware));
+    LOGK("disk %s firmware version %s\n", disk->name, data->firmware);
+
+    // model number
+    ata_swap_words(data->model, sizeof(data->model));
+    LOGK("disk %s model number %s\n", disk->name, data->model);
+
+    ret = 0;
+
+rollback:
+    mutexlock_release(&disk->bus->lock);
+    return ret;
+}
+
+// 硬盘中断处理
 void ata_handler(int vector) {
     assert(vector == 0x2e || vector == 0x2f);
 
@@ -240,6 +352,8 @@ void ata_handler(int vector) {
 }
 
 static void ata_bus_init() {
+    u16 *buf = (u16 *)kalloc_page(1);
+
     for (size_t bidx = 0; bidx < ATA_BUS_NR; bidx++) {
         ata_bus_t *bus = &buses[bidx];
         sprintf(bus->name, "ata%u", bidx);
@@ -261,6 +375,7 @@ static void ata_bus_init() {
             ata_disk_t *disk = &bus->disks[didx];
             sprintf(disk->name, "hdd%c", 'a' + bidx*ATA_BUS_NR + didx);
             disk->bus = bus;
+
             if (didx == 0) {
                 // Master disk
                 disk->master = true;
@@ -270,8 +385,13 @@ static void ata_bus_init() {
                 disk->master = false;
                 disk->selector = ATA_SLAVE_SELECTOR;
             }
+
+            ata_identify(disk, buf);
+            memset((void *)buf, 0, PAGE_SIZE);
         }
     }
+
+    kfree_page((u32)buf, 1);
 }
 
 // ATA 总线和磁盘初始化

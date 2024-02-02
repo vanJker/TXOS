@@ -31,23 +31,9 @@ static void sys_default() {
     panic("syscall is not implemented!!!");
 }
 
-static task_t *task = NULL; // 当前阻塞任务
-
-#include <xos/ata.h>
-#include <xos/string.h>
-extern ata_bus_t buses[ATA_BUS_NR];
 // 系统调用 test 的处理函数
 static u32 sys_test() {
-    void *buf = (void *)kalloc_page(1);
-    BMB;
-    LOGK("read buffer 0x%p\n", buf);
-    ata_pio_read(&buses[0].disks[0], buf, 1, 0);
-    BMB;
-    memset(buf, 0x5a, SECTOR_SIZE);
-    BMB;
-    ata_pio_write(&buses[0].disks[0], buf, 1, 1);
-    LOGK("write buffer 0x%p\n", buf);
-    kfree_page((u32)buf, 1);
+    return 255;
 }
 
 // 系统调用 write 的处理函数

@@ -20,6 +20,7 @@ typedef struct ata_disk_t {
     struct ata_bus_t *bus;  // 所在的 ATA 总线
     u8 selector;            // 磁盘选择信息
     bool master;            // 是否为主盘
+    size_t total_lba;       // 可用扇区的数量
 } ata_disk_t;
 
 // ATA 总线
