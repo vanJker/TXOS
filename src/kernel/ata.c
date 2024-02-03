@@ -259,6 +259,16 @@ i32 ata_pio_write(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
     return 0;
 }
 
+// 从分区 part 的第 lba 个扇区开始读取
+i32 ata_pio_partition_read(ata_partition_t *part, void *buf, u8 count, size_t lba) {
+    return ata_pio_read(part->disk, buf, count, part->start_lba + lba);
+}
+
+// 从分区 part 的第 lba 个扇区开始写入
+i32 ata_pio_partition_write(ata_partition_t *part, void *buf, u8 count, size_t lba) {
+    return ata_pio_write(part->disk, buf, count, part->start_lba + lba);
+}
+
 // 软件方法重置驱动器
 static void ata_reset_derive(ata_bus_t *bus) {
     outb(bus->ctlbase + ATA_CTL_DEV_CONTROL, ATA_CTRL_SRST);
@@ -299,6 +309,7 @@ static i32 ata_identify(ata_disk_t *disk, u16 *buf) {
         ata_busy_wait(disk->bus, ATA_SR_DRQ) == ATA_SR_ERR
     ) {
         LOGK("disk %s does not exist...\n", disk->name);
+        disk->total_lba = 0;
         ret = EOF;
         goto rollback;
     }
@@ -328,6 +339,58 @@ static i32 ata_identify(ata_disk_t *disk, u16 *buf) {
 rollback:
     mutexlock_release(&disk->bus->lock);
     return ret;
+}
+
+// 磁盘分区
+static void ata_partition(ata_disk_t *disk, u16 *buf) {
+    // 如果磁盘不可用
+    if (disk->total_lba == 0) {
+        return;
+    }
+
+    // 读取主引导扇区
+    ata_pio_read(disk, buf, 1, 0);
+    mbr_t *mbr = (mbr_t *)buf;
+
+    // 扫描分区表信息
+    for (size_t i = 0; i < ATA_PARTITION_NR; i++) {
+        partition_entry_t *entry = &mbr->partition_table[i];
+        ata_partition_t *part = &disk->parts[i];
+
+        if (entry->count == 0) continue;
+
+        sprintf(part->name, "%s%d", disk->name, i + 1);
+        LOGK("partition %s\n", part->name);
+        LOGK("  |__bootable %d\n", entry->bootable);
+        LOGK("  |__start %d\n", entry->start_lba);
+        LOGK("  |__count %d\n", entry->count);
+        LOGK("  |__system 0x%x\n", entry->system);
+
+        // 配置系统分区信息
+        part->disk = disk;
+        part->system = entry->system;
+        part->start_lba = entry->start_lba;
+        part->count = entry->count;
+
+        // 扫描扩展分区
+        if (entry->system == PARTITION_FS_EXTENDED) {
+            LOGK("Unsupport extended partition...\n");
+            
+            u8 *ebuf = (u8 *)buf + SECTOR_SIZE;
+            ata_pio_read(disk, ebuf, 1, entry->start_lba);
+            mbr_t *embr = (mbr_t *)ebuf;
+
+            for (size_t j = 0; j < ATA_PARTITION_NR; j++) {
+                partition_entry_t *eentry = &embr->partition_table[j];
+                if (eentry->count == 0) continue;
+                LOGK("partition %d extend %d\n", i, j);
+                LOGK("  |__bootable %d\n", eentry->bootable);
+                LOGK("  |__start %d\n", eentry->start_lba + entry->start_lba);
+                LOGK("  |__count %d\n", eentry->count);
+                LOGK("  |__system 0x%x\n", eentry->system);
+            }
+        }
+    }
 }
 
 // 硬盘中断处理
@@ -387,6 +450,8 @@ static void ata_bus_init() {
             }
 
             ata_identify(disk, buf);
+            memset((void *)buf, 0, PAGE_SIZE);
+            ata_partition(disk, buf);
             memset((void *)buf, 0, PAGE_SIZE);
         }
     }

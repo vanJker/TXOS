@@ -177,6 +177,7 @@ static i32 ata_identify(ata_disk_t *disk, u16 *buf) {
         ata_busy_wait(disk->bus, ATA_SR_DRQ) == ATA_SR_ERR
     ) {
         LOGK("disk %s does not exist...\n", disk->name);
+        disk->total_lba = 0;
         ret = EOF;
         goto rollback;
     }
@@ -190,6 +191,8 @@ rollback:
 ```
 
 磁盘选择时发送的 0xA0 或 0xB0 刚好等于 `disk->selector & (~0x40)` 即 Bit-6 为 0，其余位一致。
+
+我们将不可用的磁盘的扇区数 `total_lba` 设置为 0。
 
 识别硬盘后，打印可用扇区数 (total_lba)、序列号 (serial number)、固件版本 (firmware revision) 以及模型数 (model number) 这类信息：
 

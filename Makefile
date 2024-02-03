@@ -91,7 +91,7 @@ $(KERNEL_SYM): $(KERNEL_ELF)
 	nm $< | sort > $@
 
 
-$(TARGET)/master.img: $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM)
+$(TARGET)/master.img: $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM) $(SRC)/utils/master.sfdisk
 # 创建一个 16M 的硬盘镜像
 	yes | bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat $@
 # 将 boot.bin 写入主引导扇区
@@ -102,6 +102,8 @@ $(TARGET)/master.img: $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM)
 	test -n "$$(find $(TARGET)/kernel.bin -size -100k)"
 # 将 kernel.bin 写入硬盘
 	dd if=$(KERNEL_BIN) of=$@ bs=512 count=200 seek=10 conv=notrunc
+# 对硬盘进行分区
+	sfdisk $@ < $(SRC)/utils/master.sfdisk
 
 $(TARGET)/slave.img:
 # 创建一个 32M 的硬盘镜像
