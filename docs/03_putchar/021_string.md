@@ -21,6 +21,7 @@
 /* src/include/xos/string.h */
 
 char *strcpy(char *dest, const char *src); // copies one string to another
+char *strncpy(char *dest, const char *src, size_t count); // copies a certain amount of characters from one string to another
 char *strcat(char* dest, const char *src); // concatenates two strings
 size_t strlen(const char *str);            // returns the length of a given string
 int strcmp(const char *lhs, const char *rhs); // compares two strings

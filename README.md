@@ -1,6 +1,4 @@
-# TXOS
-
-The X of Operating System.
+# TXOS: The X of Operating System
 
 ## Memory Management
 
@@ -16,7 +14,7 @@ See [this document](/docs/08_syscall/README.md).
 - qemu == 8.1.0
 - gcc == 13.2.1
 - gdb == 13.2
-- nasm == 2.16.01
+- nasm == 2.16.01bochs == 2.7.1
 - GRUB == 2:2.12rc1-1
 
 ## References

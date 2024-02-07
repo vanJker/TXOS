@@ -11,6 +11,18 @@ char *strcpy(char *dest, const char *src) {
     return dest;
 }
 
+// copies a certain amount of characters from one string to another
+char *strncpy(char *dest, const char *src, size_t count) {
+    char *ptr = dest;
+    for (size_t i = 0; i < count; i++) {
+        *ptr++ = *src;
+        if (*src++ == EOS)
+            break;
+    }
+    dest[count - 1] = EOS;
+    return dest;
+}
+
 // concatenates two strings
 char *strcat(char* dest, const char *src) {
     char *ptr = dest;
