@@ -5,6 +5,7 @@
 #include <xos/assert.h>
 #include <xos/debug.h>
 #include <xos/console.h>
+#include <xos/device.h>
 
 extern void sys_exit(i32 status);
 extern void sys_fork();
@@ -33,13 +34,24 @@ static void sys_default() {
 
 // 系统调用 test 的处理函数
 static u32 sys_test() {
+    char ch;
+    dev_t *device;
+
+    device = dev_find(DEV_KEYBOARD, 0);
+    assert(device);
+    dev_read(device->did, &ch, 1, 0, 0);
+
+    device = dev_find(DEV_CONSOLE, 0);
+    assert(device);
+    dev_write(device->did, &ch, 1, 0, DEBUG);
+
     return 255;
 }
 
 // 系统调用 write 的处理函数
 static i32 sys_write(fd_t fd, const void *buf, size_t len) {
     if (fd == STDOUT || fd == STDERR) {
-        return console_write((char *)buf, len, TEXT);
+        return console_write(NULL, (char *)buf, len, 0, TEXT);
     }
     // TODO:
     panic("unimplement write!!!");

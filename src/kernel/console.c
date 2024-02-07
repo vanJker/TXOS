@@ -148,13 +148,12 @@ static void command_del(console_t *c) {
 }
 
 // 向 console 当前光标处以 attr 样式写入一个字节序列
-i32 console_write(char *buf, size_t count, u8 attr) {
+i32 console_write(dev_t *_dev, char *buf, size_t count, size_t _idx, i32 flags) {
+    u8 attr = (u8)flags;
     i32 ret = count;
-
     u32 irq = irq_disable();
 
     char ch;
-
     while (count--) {
         ch = *buf++;
         switch (ch) {
@@ -230,4 +229,6 @@ void console_clear() {
 // 初始化 console
 void console_init() {
     console_clear();
+
+    dev_install(DEV_CHAR, DEV_CONSOLE, NULL, "console", 0, NULL, NULL, console_write);
 }

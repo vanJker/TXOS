@@ -7,6 +7,7 @@
 #include <xos/mutex.h>
 #include <xos/task.h>
 #include <xos/fifo.h>
+#include <xos/device.h>
 
 static void keyboard_set_leds();
 
@@ -398,7 +399,7 @@ void keyboard_handler(int vector) {
 }
 
 // 从键盘的环形缓冲区读取字符到指定缓冲区，并返回读取字符的个数
-size_t keyboard_read(char *buf, size_t count) {
+i32 keyboard_read(dev_t *_dev, char *buf, size_t count, size_t _idx, i32 _flags) {
     mutexlock_acquire(&keyboard.lock);
     int i = 0;
     while (i < count) {
@@ -416,6 +417,8 @@ size_t keyboard_read(char *buf, size_t count) {
 // 初始化键盘中断
 void keyboard_init() {
     keyboard_new(&keyboard);
+
+    dev_install(DEV_CHAR, DEV_KEYBOARD, NULL, "keyboard", 0, NULL, keyboard_read, NULL);
 
     set_interrupt_handler(IRQ_KEYBOARD, keyboard_handler);
     set_interrupt_mask(IRQ_KEYBOARD, true);

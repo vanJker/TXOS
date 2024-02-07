@@ -14,8 +14,10 @@ extern void keyboard_init();
 extern void tss_init();
 extern void arena_init();
 extern void ata_init();
+extern void device_init();
 
 void kernel_init() {
+    device_init();
     console_init();
     gdt_init();
     tss_init();

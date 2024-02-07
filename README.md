@@ -1,4 +1,4 @@
-# TXOS: The X of Operating System
+# TXOS/XOS: The X of Operating System
 
 ## Memory Management
 

@@ -38,6 +38,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/keyboard.o \
 			   $(TARGET)/kernel/arena.o \
 			   $(TARGET)/kernel/ata.o \
+			   $(TARGET)/kernel/device.o \
 
 # lib 的目标文件
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))

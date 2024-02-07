@@ -2,6 +2,7 @@
 #define XOS_CONSOLE_H
 
 #include <xos/types.h>
+#include <xos/device.h>
 
 // 字符样式
 #define ERASE 0x0720 // 空格
@@ -14,6 +15,6 @@
 
 void console_init();  // 初始化 console
 void console_clear(); // 清空 console
-i32 console_write(char *buf, size_t count, u8 attr); // 向 console 当前光标处以 attr 样式写入一个字节序列
+i32 console_write(dev_t *_dev, char *buf, size_t count, size_t _idx, i32 flags); // 向 console 当前光标处以 attr 样式写入一个字节序列
 
 #endif
