@@ -29,8 +29,8 @@ typedef struct dev_t {
     char name[DEV_NAMELEN]; // 设备名
     dev_type_t type;        // 设备类型
     dev_subtype_t subtype;  // 设备具体类型
-    did_t did;              // 设备号
-    did_t parent;           // 父设备号
+    devid_t dev_id;           // 设备号
+    devid_t parent;           // 父设备号
     void *dev;              // 具体设备位置
 
     // 控制设备
@@ -42,22 +42,22 @@ typedef struct dev_t {
 } dev_t;
 
 // 安装设备
-did_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name, 
-                  did_t parent, void *ioctl, void *read, void *write);
+devid_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name, 
+                  devid_t parent, void *ioctl, void *read, void *write);
 
 // 根据设备具体类型查找该类型的第 idx 个设备
 dev_t *dev_find(dev_subtype_t subtype, size_t idx);
 
 // 根据设备号查找设备
-dev_t *dev_get(did_t did);
+dev_t *dev_get(devid_t dev_id);
 
 // 控制设备
-i32 dev_ioctl(did_t did, dev_cmd_t cmd, void *args, i32 flags);
+i32 dev_ioctl(devid_t dev_id, dev_cmd_t cmd, void *args, i32 flags);
 
 // 读设备
-i32 dev_read(did_t did, void *buf, size_t count, size_t idx, i32 flags);
+i32 dev_read(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags);
 
 // 写设备
-i32 dev_write(did_t did, void *buf, size_t count, size_t idx, i32 flags);
+i32 dev_write(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags);
 
 #endif

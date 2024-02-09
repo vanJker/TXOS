@@ -43,6 +43,9 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 # lib 的目标文件
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 
+# 头文件
+HEADERS := $(wildcard $(SRC)/include/xos/*.h)
+
 # gcc 参数
 CFLAGS := -m32			# 生成 32 位机器上的程序
 CFLAGS += -nostdinc		# 不引入标准头文件

@@ -10,24 +10,31 @@
 //--> include/xos/device.h
 
 // 安装设备
-did_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name, 
-                  did_t parent, void *ioctl, void *read, void *write);
+devid_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name, 
+                  devid_t parent, void *ioctl, void *read, void *write);
 
 // 根据设备具体类型查找该类型的第 idx 个设备
 dev_t *dev_find(dev_subtype_t subtype, size_t idx);
 
 // 根据设备号查找设备
-dev_t *dev_get(did_t did);
+dev_t *dev_get(devid_t dev_id);
 
 // 控制设备
-i32 dev_ioctl(did_t did, dev_cmd_t cmd, void *args, i32 flags);
+i32 dev_ioctl(devid_t dev_id, dev_cmd_t cmd, void *args, i32 flags);
 
 // 读设备
-i32 dev_read(did_t did, void *buf, size_t count, size_t idx, i32 flags);
+i32 dev_read(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags);
 
 // 写设备
-i32 dev_write(did_t did, void *buf, size_t count, size_t idx, i32 flags);
+i32 dev_write(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags);
 ```
+
+这里解释一下读写功能的函数参数：
+- `dev` 为指向设备的指针
+- `buf` 为读写时的缓冲区
+- `count` 表示读写单元的个数（对于键盘、控制台读写单位为字符，对于硬盘、分区读写单元为扇区）
+- `idx` 表示读写单元的起始编号（例如硬盘读写时的 LBA）
+- `flags` 表示特殊标记（例如对于控制台可以通过该标记来传递打印字符的颜色）
 
 ## 2. 代码分析
 
@@ -73,7 +80,7 @@ typedef enum dev_cmd_t {
 //--> include/xos/types.h
 
 // 设备标识符
-typedef i32 did_t;
+typedef i32 devid_t;
 
 
 //--> include/xos/device.h
@@ -86,8 +93,8 @@ typedef struct dev_t {
     char name[DEV_NAMELEN]; // 设备名
     dev_type_t type;        // 设备类型
     dev_subtype_t subtype;  // 设备具体类型
-    did_t did;              // 设备号
-    did_t parent;           // 父设备号
+    devid_t dev_id;              // 设备号
+    devid_t parent;           // 父设备号
     void *dev;              // 具体设备位置
 
     // 控制设备
@@ -133,9 +140,9 @@ static dev_t *get_null_dev() {
 
 ```c
 // 根据设备号查找设备
-dev_t *dev_get(did_t did) {
-    assert(did >= 0 && did < DEV_NR);
-    dev_t *dev = &devices[did];
+dev_t *dev_get(devid_t dev_id) {
+    assert(dev_id >= 0 && dev_id < DEV_NR);
+    dev_t *dev = &devices[dev_id];
     assert(dev->type != DEV_NULL);
     return dev;
 }
@@ -170,8 +177,8 @@ dev_t *dev_find(dev_subtype_t subtype, size_t idx) {
 //--> kernel/device.c
 
 // 安装设备
-did_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name, 
-                  did_t parent, void *ioctl, void *read, void *write) {
+devid_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name, 
+                  devid_t parent, void *ioctl, void *read, void *write) {
     dev_t *vdev = get_null_dev();
     
     strncpy(vdev->name, name, DEV_NAMELEN);
@@ -183,7 +190,7 @@ did_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name,
     vdev->read = read;
     vdev->write = write;
 
-    return vdev->did;
+    return vdev->dev_id;
 }
 ```
 
@@ -195,30 +202,30 @@ did_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name,
 //--> kernel/device.c
 
 // 控制设备
-i32 dev_ioctl(did_t did, dev_cmd_t cmd, void *args, i32 flags) {
-    dev_t *dev = dev_get(did);
+i32 dev_ioctl(devid_t dev_id, dev_cmd_t cmd, void *args, i32 flags) {
+    dev_t *dev = dev_get(dev_id);
     if (dev->ioctl == NULL) {
-        LOGK("Device %d's ioctl is unimplement...\n", dev->did);
+        LOGK("Device %d's ioctl is unimplement...\n", dev->dev_id);
         return EOF;
     }
     return dev->ioctl(dev, cmd, args, flags);
 }
 
 // 读设备
-i32 dev_read(did_t did, void *buf, size_t count, size_t idx, i32 flags) {
-    dev_t *dev = dev_get(did);
+i32 dev_read(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
+    dev_t *dev = dev_get(dev_id);
     if (dev->read == NULL) {
-        LOGK("Device %d's read is unimplement...\n", dev->did);
+        LOGK("Device %d's read is unimplement...\n", dev->dev_id);
         return EOF;
     }
     return dev->read(dev, buf, count, idx, flags);
 }
 
 // 写设备
-i32 dev_write(did_t did, void *buf, size_t count, size_t idx, i32 flags) {
-    dev_t *dev = dev_get(did);
+i32 dev_write(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
+    dev_t *dev = dev_get(dev_id);
     if (dev->write == NULL) {
-        LOGK("Device %d's write is unimplement...\n", dev->did);
+        LOGK("Device %d's write is unimplement...\n", dev->dev_id);
         return EOF;
     }
     return dev->write(dev, buf, count, idx, flags);
@@ -238,7 +245,7 @@ void device_init() {
         dev_t *dev = &devices[i];
         strncpy(dev->name, "null", DEV_NAMELEN);
         dev->type = DEV_NULL;
-        dev->did = i;
+        dev->dev_id = i;
         dev->parent = 0;
         dev->dev = NULL;
         dev->ioctl = NULL;
@@ -327,11 +334,11 @@ static u32 sys_test() {
 
     device = dev_find(DEV_KEYBOARD, 0);
     assert(device);
-    dev_read(device->did, &ch, 1, 0, 0);
+    dev_read(device->dev_id, &ch, 1, 0, 0);
 
     device = dev_find(DEV_CONSOLE, 0);
     assert(device);
-    dev_write(device->did, &ch, 1, 0, DEBUG);
+    dev_write(device->dev_id, &ch, 1, 0, DEBUG);
 
     return 255;
 }

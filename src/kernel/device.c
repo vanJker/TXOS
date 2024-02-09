@@ -20,8 +20,8 @@ static dev_t *get_null_dev() {
 }
 
 // 安装设备
-did_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name, 
-                  did_t parent, void *ioctl, void *read, void *write) {
+devid_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name, 
+                  devid_t parent, void *ioctl, void *read, void *write) {
     dev_t *vdev = get_null_dev();
     
     strncpy(vdev->name, name, DEV_NAMELEN);
@@ -33,7 +33,7 @@ did_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *name,
     vdev->read = read;
     vdev->write = write;
 
-    return vdev->did;
+    return vdev->dev_id;
 }
 
 // 根据设备具体类型查找该类型的第 idx 个设备
@@ -50,38 +50,38 @@ dev_t *dev_find(dev_subtype_t subtype, size_t idx) {
 }
 
 // 根据设备号查找设备
-dev_t *dev_get(did_t did) {
-    assert(did >= 0 && did < DEV_NR);
-    dev_t *dev = &devices[did];
+dev_t *dev_get(devid_t dev_id) {
+    assert(dev_id >= 0 && dev_id < DEV_NR);
+    dev_t *dev = &devices[dev_id];
     assert(dev->type != DEV_NULL);
     return dev;
 }
 
 // 控制设备
-i32 dev_ioctl(did_t did, dev_cmd_t cmd, void *args, i32 flags) {
-    dev_t *dev = dev_get(did);
+i32 dev_ioctl(devid_t dev_id, dev_cmd_t cmd, void *args, i32 flags) {
+    dev_t *dev = dev_get(dev_id);
     if (dev->ioctl == NULL) {
-        LOGK("Device %d's ioctl is unimplement...\n", dev->did);
+        LOGK("Device %d's ioctl is unimplement...\n", dev->dev_id);
         return EOF;
     }
     return dev->ioctl(dev, cmd, args, flags);
 }
 
 // 读设备
-i32 dev_read(did_t did, void *buf, size_t count, size_t idx, i32 flags) {
-    dev_t *dev = dev_get(did);
+i32 dev_read(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
+    dev_t *dev = dev_get(dev_id);
     if (dev->read == NULL) {
-        LOGK("Device %d's read is unimplement...\n", dev->did);
+        LOGK("Device %d's read is unimplement...\n", dev->dev_id);
         return EOF;
     }
     return dev->read(dev, buf, count, idx, flags);
 }
 
 // 写设备
-i32 dev_write(did_t did, void *buf, size_t count, size_t idx, i32 flags) {
-    dev_t *dev = dev_get(did);
+i32 dev_write(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
+    dev_t *dev = dev_get(dev_id);
     if (dev->write == NULL) {
-        LOGK("Device %d's write is unimplement...\n", dev->did);
+        LOGK("Device %d's write is unimplement...\n", dev->dev_id);
         return EOF;
     }
     return dev->write(dev, buf, count, idx, flags);
@@ -93,7 +93,7 @@ void device_init() {
         dev_t *dev = &devices[i];
         strncpy(dev->name, "null", DEV_NAMELEN);
         dev->type = DEV_NULL;
-        dev->did = i;
+        dev->dev_id = i;
         dev->parent = 0;
         dev->dev = NULL;
         dev->ioctl = NULL;

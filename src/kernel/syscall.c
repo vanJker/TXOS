@@ -39,11 +39,11 @@ static u32 sys_test() {
 
     device = dev_find(DEV_KEYBOARD, 0);
     assert(device);
-    dev_read(device->did, &ch, 1, 0, 0);
+    dev_read(device->dev_id, &ch, 1, 0, 0);
 
     device = dev_find(DEV_CONSOLE, 0);
     assert(device);
-    dev_write(device->did, &ch, 1, 0, DEBUG);
+    dev_write(device->dev_id, &ch, 1, 0, DEBUG);
 
     return 255;
 }

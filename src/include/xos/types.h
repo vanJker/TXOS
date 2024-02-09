@@ -50,7 +50,7 @@ typedef double f64;
 typedef i32 pid_t;
 
 // 设备标识符
-typedef i32 did_t;
+typedef i32 devid_t;
 
 // 时间戳 (从 1970-01-01 00:00:00 开始的秒数)
 typedef u32 time_t;
