@@ -52,14 +52,14 @@ pid_t   waitpid(pid_t pid, int *status);
 time_t  time();
 
 // getpid() returns the process ID (PID) of the calling process.
-pid_t   get_pid();
+pid_t   getpid();
 
 // brk() change the location of the program break, which defines the 
 // end of the process's data segment.
 i32     brk(void *addr);
 
 // getppid() returns the process ID of the parent of the calling process.
-pid_t   get_ppid();
+pid_t   getppid();
 
 // yield() causes the calling thread to relinquish the CPU.
 void    yield();

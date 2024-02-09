@@ -298,7 +298,10 @@ static void ata_partition(ata_disk_t *disk, u16 *buf) {
         partition_entry_t *entry = &mbr->partition_table[i];
         ata_partition_t *part = &disk->parts[i];
 
-        if (entry->count == 0) continue;
+        if (entry->count == 0) {
+            part->count = 0;
+            continue;
+        }
 
         sprintf(part->name, "%s%d", disk->name, i + 1);
         LOGK("partition %s\n", part->name);
@@ -315,6 +318,8 @@ static void ata_partition(ata_disk_t *disk, u16 *buf) {
     }
 }
 ```
+
+类似于磁盘，对于分区 `count == 0` 表示该分区不存在。
 
 接下来需要对扩展分区进行特殊处理，我们的系统暂时不支持扩展分区，所以对扩展分区的处理仅仅是：将扩展分区视为主引导扇区，并输出一下其内部的分区信息。
 

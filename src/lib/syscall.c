@@ -64,11 +64,11 @@ i32 brk(void *addr) {
     return _syscall1(SYS_BRK, (u32)addr);
 }
 
-pid_t get_pid() {
+pid_t getpid() {
     return _syscall0(SYS_GETPID);
 }
 
-pid_t get_ppid() {
+pid_t getppid() {
     return _syscall0(SYS_GETPPID);
 }
 
