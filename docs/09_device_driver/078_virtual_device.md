@@ -208,7 +208,7 @@ i32 dev_ioctl(devid_t dev_id, dev_cmd_t cmd, void *args, i32 flags) {
         LOGK("Device %d's ioctl is unimplement...\n", dev->dev_id);
         return EOF;
     }
-    return dev->ioctl(dev, cmd, args, flags);
+    return dev->ioctl(dev->dev, cmd, args, flags);
 }
 
 // 读设备
@@ -218,7 +218,7 @@ i32 dev_read(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
         LOGK("Device %d's read is unimplement...\n", dev->dev_id);
         return EOF;
     }
-    return dev->read(dev, buf, count, idx, flags);
+    return dev->read(dev->dev, buf, count, idx, flags);
 }
 
 // 写设备
@@ -228,7 +228,7 @@ i32 dev_write(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
         LOGK("Device %d's write is unimplement...\n", dev->dev_id);
         return EOF;
     }
-    return dev->write(dev, buf, count, idx, flags);
+    return dev->write(dev->dev, buf, count, idx, flags);
 }
 ```
 
@@ -313,13 +313,13 @@ void kernel_init() {
 //--> kernel/concole.c
 void console_init() {
     ...
-    dev_install(DEV_CHAR, DEV_CONSOLE, NULL, "console", 0, NULL, NULL, console_write);
+    dev_install(DEV_CHAR, DEV_CONSOLE, NULL, "console", -1, NULL, NULL, console_write);
 }
 
 //--> kernel/keyboard.c
 void keyboard_init() {
     ...
-    dev_install(DEV_CHAR, DEV_KEYBOARD, NULL, "keyboard", 0, NULL, keyboard_read, NULL);
+    dev_install(DEV_CHAR, DEV_KEYBOARD, NULL, "keyboard", -1, NULL, keyboard_read, NULL);
 }
 ```
 

@@ -418,7 +418,7 @@ i32 keyboard_read(dev_t *_dev, char *buf, size_t count, size_t _idx, i32 _flags)
 void keyboard_init() {
     keyboard_new(&keyboard);
 
-    dev_install(DEV_CHAR, DEV_KEYBOARD, NULL, "keyboard", 0, NULL, keyboard_read, NULL);
+    dev_install(DEV_CHAR, DEV_KEYBOARD, NULL, "keyboard", -1, NULL, keyboard_read, NULL);
 
     set_interrupt_handler(IRQ_KEYBOARD, keyboard_handler);
     set_interrupt_mask(IRQ_KEYBOARD, true);

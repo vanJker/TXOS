@@ -230,5 +230,5 @@ void console_clear() {
 void console_init() {
     console_clear();
 
-    dev_install(DEV_CHAR, DEV_CONSOLE, NULL, "console", 0, NULL, NULL, console_write);
+    dev_install(DEV_CHAR, DEV_CONSOLE, NULL, "console", -1, NULL, NULL, console_write);
 }
