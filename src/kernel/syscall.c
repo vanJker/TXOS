@@ -6,6 +6,7 @@
 #include <xos/debug.h>
 #include <xos/console.h>
 #include <xos/device.h>
+#include <xos/string.h>
 
 extern void sys_exit(i32 status);
 extern void sys_fork();
@@ -34,16 +35,26 @@ static void sys_default() {
 
 // 系统调用 test 的处理函数
 static u32 sys_test() {
-    char ch;
+    // char ch;
     dev_t *device;
 
-    device = dev_find(DEV_KEYBOARD, 0);
-    assert(device);
-    dev_read(device->dev_id, &ch, 1, 0, 0);
+    // device = dev_find(DEV_KEYBOARD, 0);
+    // assert(device);
+    // dev_read(device->dev_id, &ch, 1, 0, 0);
 
-    device = dev_find(DEV_CONSOLE, 0);
+    // device = dev_find(DEV_CONSOLE, 0);
+    // assert(device);
+    // dev_write(device->dev_id, &ch, 1, 0, DEBUG);
+
+    void *buf = (void *)kalloc_page(1);
+
+    device = dev_find(DEV_ATA_PART, 0);
     assert(device);
-    dev_write(device->dev_id, &ch, 1, 0, DEBUG);
+    pid_t pid = current_task()->pid;
+    memset(buf, pid, 512);
+    dev_request(device->dev_id, buf, 1, pid, 0, REQ_WRITE);
+
+    kfree_page((u32)buf, 1);
 
     return 255;
 }

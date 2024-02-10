@@ -4,6 +4,7 @@
 #include <xos/types.h>
 #include <xos/mutex.h>
 #include <xos/task.h>
+#include <xos/device.h>
 
 // 扇区大小 (512 Byte)
 #define SECTOR_SIZE 512
@@ -77,9 +78,18 @@ typedef struct mbr_t {
     u16 magic_number;   // 魔数
 } _packed mbr_t;
 
+// 发送磁盘控制命令，获取对应信息
+i32 ata_pio_ioctl(ata_disk_t *disk, dev_cmd_t cmd, void *args, i32 flags);
 // 从磁盘 disk 的第 lba 个扇区开始，读取连续 count 个扇区的数据到缓冲区 buf
 i32 ata_pio_read(ata_disk_t *disk, void *buf, u8 count, size_t lba);
 // 将缓冲区 buf 的数据写入磁盘 disk 的第 lba 个扇区开始的连续 count 个扇区
 i32 ata_pio_write(ata_disk_t *disk, void *buf, u8 count, size_t lba);
+
+// 发送分区控制命令，获取对应信息
+i32 ata_pio_partition_ioctl(ata_partition_t part, dev_cmd_t cmd, void *args, i32 flags);
+// 从分区 part 的第 lba 个扇区开始读取
+i32 ata_pio_partition_read(ata_partition_t *part, void *buf, u8 count, size_t lba);
+// 从分区 part 的第 lba 个扇区开始写入
+i32 ata_pio_partition_write(ata_partition_t *part, void *buf, u8 count, size_t lba);
 
 #endif

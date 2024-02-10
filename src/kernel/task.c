@@ -377,6 +377,8 @@ void task_init() {
     idle_task = task_create((target_t)idle_thread, "idle", 1, KERNEL_TASK);
     task_create((target_t)init_thread, "init", 5, USER_TASK);
     task_create((target_t)test_thread, "test", 5, KERNEL_TASK);
+    task_create((target_t)test_thread, "test", 5, KERNEL_TASK);
+    task_create((target_t)test_thread, "test", 5, KERNEL_TASK);
 }
 
 /*******************************

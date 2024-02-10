@@ -6,6 +6,7 @@
 #include <xos/string.h>
 #include <xos/assert.h>
 #include <xos/debug.h>
+#include <xos/task.h>
 
 // ATA 总线寄存器基址
 #define ATA_IOBASE_PRIMARY      0x1F0
@@ -252,11 +253,25 @@ i32 ata_pio_write(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
             bus->waiter = task;
             task_block(task, NULL, TASK_BLOCKED);
         }
+        task_sleep(100);
         ata_busy_wait(bus, ATA_SR_NULL); // 等待写入数据完成
     }
 
     mutexlock_release(&bus->lock);
     return 0;
+}
+
+// 发送磁盘控制命令，获取对应信息
+i32 ata_pio_ioctl(ata_disk_t *disk, dev_cmd_t cmd, void *args, i32 flags) {
+    switch (cmd) {
+    case DEV_CMD_SECTOR_START:
+        return 0;
+    case DEV_CMD_SECTOR_COUNT:
+        return disk->total_lba;
+    default:
+        panic("Unknown device command %d...", cmd);
+        break;
+    }
 }
 
 // 从分区 part 的第 lba 个扇区开始读取
@@ -267,6 +282,19 @@ i32 ata_pio_partition_read(ata_partition_t *part, void *buf, u8 count, size_t lb
 // 从分区 part 的第 lba 个扇区开始写入
 i32 ata_pio_partition_write(ata_partition_t *part, void *buf, u8 count, size_t lba) {
     return ata_pio_write(part->disk, buf, count, part->start_lba + lba);
+}
+
+// 发送分区控制命令，获取对应信息
+i32 ata_pio_partition_ioctl(ata_partition_t part, dev_cmd_t cmd, void *args, i32 flags) {
+    switch (cmd) {
+    case DEV_CMD_SECTOR_START:
+        return part.start_lba;
+    case DEV_CMD_SECTOR_COUNT:
+        return part.count;
+    default:
+        panic("Unknown device command %d...", cmd);
+        break;
+    }
 }
 
 // 软件方法重置驱动器
@@ -357,7 +385,11 @@ static void ata_partition(ata_disk_t *disk, u16 *buf) {
         partition_entry_t *entry = &mbr->partition_table[i];
         ata_partition_t *part = &disk->parts[i];
 
-        if (entry->count == 0) continue;
+        // 分区不存在
+        if (entry->count == 0) {
+            part->count = 0;
+            continue;
+        }
 
         sprintf(part->name, "%s%d", disk->name, i + 1);
         LOGK("partition %s\n", part->name);
@@ -388,6 +420,34 @@ static void ata_partition(ata_disk_t *disk, u16 *buf) {
                 LOGK("  |__start %d\n", eentry->start_lba + entry->start_lba);
                 LOGK("  |__count %d\n", eentry->count);
                 LOGK("  |__system 0x%x\n", eentry->system);
+            }
+        }
+    }
+}
+
+// 安装块设备
+static void ata_device_install() {
+    for (size_t bidx = 0; bidx < ATA_BUS_NR; bidx++) {
+        ata_bus_t *bus = &buses[bidx];
+        
+        for (size_t didx = 0; didx < ATA_DISK_NR; didx++) {
+            ata_disk_t *disk = &bus->disks[didx];
+
+            // 硬盘不存在
+            if (disk->total_lba == 0) continue;
+            // 安装磁盘设备
+            devid_t dev_id = dev_install(DEV_BLOCK, DEV_ATA_DISK, disk, disk->name, -1, 
+                                         ata_pio_ioctl, ata_pio_read, ata_pio_write);
+
+            for (size_t pidx = 0; pidx < ATA_PARTITION_NR; pidx++) {
+                ata_partition_t *part = &disk->parts[pidx];
+
+                // 分区不存在
+                if (part->count == 0) continue;
+                // 安装分区设备
+                dev_install(DEV_BLOCK, DEV_ATA_PART, part, part->name, dev_id, 
+                            ata_pio_partition_ioctl, ata_pio_partition_read, 
+                            ata_pio_partition_write);
             }
         }
     }
@@ -463,6 +523,7 @@ static void ata_bus_init() {
 void ata_init() {
     LOGK("ata init...\n");
     ata_bus_init();
+    ata_device_install();
 
     // 注册硬盘中断，并取消对应的屏蔽字
     set_interrupt_handler(IRQ_HARDDISK_1, ata_handler);

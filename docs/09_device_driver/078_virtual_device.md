@@ -184,7 +184,7 @@ devid_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *nam
     strncpy(vdev->name, name, DEV_NAMELEN);
     vdev->type = type;
     vdev->subtype = subtype;
-    vdev->parent = 0;
+    vdev->parent = parent;
     vdev->dev = dev;
     vdev->ioctl = ioctl;
     vdev->read = read;
@@ -203,6 +203,7 @@ devid_t dev_install(dev_type_t type, dev_subtype_t subtype, void *dev, char *nam
 
 // 控制设备
 i32 dev_ioctl(devid_t dev_id, dev_cmd_t cmd, void *args, i32 flags) {
+    ASSERT_IRQ_DISABLE();   // 保证中断禁止
     dev_t *dev = dev_get(dev_id);
     if (dev->ioctl == NULL) {
         LOGK("Device %d's ioctl is unimplement...\n", dev->dev_id);
@@ -213,6 +214,7 @@ i32 dev_ioctl(devid_t dev_id, dev_cmd_t cmd, void *args, i32 flags) {
 
 // 读设备
 i32 dev_read(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
+    ASSERT_IRQ_DISABLE();   // 保证中断禁止
     dev_t *dev = dev_get(dev_id);
     if (dev->read == NULL) {
         LOGK("Device %d's read is unimplement...\n", dev->dev_id);
@@ -223,6 +225,7 @@ i32 dev_read(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
 
 // 写设备
 i32 dev_write(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
+    ASSERT_IRQ_DISABLE();   // 保证中断禁止
     dev_t *dev = dev_get(dev_id);
     if (dev->write == NULL) {
         LOGK("Device %d's write is unimplement...\n", dev->dev_id);
@@ -232,9 +235,11 @@ i32 dev_write(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
 }
 ```
 
+执行这些功能时需要保证中断禁止，防止数据竞争。
+
 ### 2.8 虚拟设备初始化
 
-虚拟设备初始化时主要是分配设备号，同时需要进行一些设置防止未定义行为：
+虚拟设备初始化时主要是分配设备号，同时需要进行一些设置防止未定义行为，父设备号为 -1 表示该设备没有父设备：
 
 ```c
 //--> kernel/device.c
@@ -246,7 +251,7 @@ void device_init() {
         strncpy(dev->name, "null", DEV_NAMELEN);
         dev->type = DEV_NULL;
         dev->dev_id = i;
-        dev->parent = 0;
+        dev->parent = -1;
         dev->dev = NULL;
         dev->ioctl = NULL;
         dev->read = NULL;
