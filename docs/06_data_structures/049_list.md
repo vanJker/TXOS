@@ -174,6 +174,8 @@ list_node_t *list_pop_back(list_t *list) {
 
 - `list_size()` 和 `list_contains()` 都是通过遍历链表的方式来实现的，时间复杂度为 $O(n)$。
 - `list_empty()` 则是通过判断当前链表状态，是否符合链表初始化时的状态，来判断链表是否为空（初始化链表的作用是将链表构造成空链表的结构）。
+- `list_ishead()` 和 `list_istail()` 则是通过判断当前链表状态，判断所给节点是否为有效头节点或尾节点（有效头尾节点是指链表 `list` 的 `head` 的下一个节点和 `tail` 的上一个节点）。
+- `list_singular()` 则是通过判断当前链表状态，来判断链表是否只有一个节点。
 
 ```c
 // 链表的长度
@@ -201,7 +203,22 @@ bool list_contains(list_t *list, list_node_t *node) {
 
 // 判断链表是否为空
 bool list_empty(list_t *list) {
-    return (list->head.next == &list->tail && list->tail.prev == &list->head);
+    return (!list_empty(list) && list->head.next->next == &list->tail);
+}
+
+// 判断链表是否只有一个有效节点
+bool list_singular(list_t *list) {
+    return (!list_empty(list) && list->head.next->next == &list->head);
+}
+
+// 判断节点是否为链表的有效尾节点
+bool list_istail(list_t *list, list_node_t *node) {
+    return node->next == &list->tail;
+}
+
+// 判断节点是否为链表的有效头节点
+bool list_ishead(list_t *list, list_node_t *node) {
+    return node->prev == &list->head;
 }
 ```
 
@@ -300,3 +317,48 @@ void list_test() {
 所以，我们可以了使用这种思想来实现链表的泛型数据，将起链接作用的 `node` 作为上面所述结构体的成员 `member`。这样我们就可以通过 `node` 的指针 / 地址，来获取链表中该 `node` 所对应的结构体的指针。以 PCB 为例，以示意图如下：
 
 ![](./images/pcb_list.drawio.svg)
+
+## 8. 链表排序
+
+为了可以指定 list node 所在的结构体中，用于排序时比较的字段，定义以下宏：
+
+```c
+// 计算结构体中 list node 和 key 字段的偏移量
+#define list_node_offset(type, key) (element_offset(type, key) - element_offset(type, node))
+
+// 根据 list_node_offset 获得的 key 字段偏移量以及 list node 的地址计算 key 字段的值
+#define list_node_key(node, offset) *(int *)((void *)node + offset)
+```
+
+通过 `list_node_offset` 宏可以计算嵌入 list node 的结构体 `type` 中 node 字段和 key 字段之间的偏移量，接下来可以通过 `list_node_key` 宏可以计算链表节点 `node` 中 key 字段的值，从而进行不同 node 之间的比较。
+
+目前只支持 `int` 类型的字段用于比较。这是合理的，因为在内核我们需要避免使用 `double` 这样的浮点数类型，因为这样会加重上下文切换 (context-switch) 时的负担，使用浮点数需要额外保存浮点数寄存器。
+
+### 8.1 插入排序
+
+```c
+// 链表插入排序
+void list_insert_sort(list_t *list, list_node_t *node, int offset) {
+    // 从链表找到第一个不小于当前节点 key 字段的值的节点，插入到其前面
+    list_node_t *anchor = &list->tail;
+    int key = list_node_key(node, offset);
+    
+    for (list_node_t *ptr = list->head.next; ptr != &list->tail; ptr = ptr->next) {
+        int cmp = list_node_key(ptr, offset);
+        if (cmp >= key) {
+            anchor = ptr;
+            break;
+        }
+    }
+
+    ASSERT_NODE_FREE(node); // 保证此时节点自由
+    list_insert_before(anchor, node); // 插入节点
+}
+```
+
+注意必须要将 `anchor` 初始化成 `&list.tail`，因为要考虑链表 `list` 为空时的插入排序情况。
+
+## 9. 参考文献
+
+- [Intrusive linked lists](https://www.data-structures-in-practice.com/intrusive-linked-lists/)
+- [你所不知道的 C 語言: linked list 和非連續記憶體](https://hackmd.io/@sysprog/c-linked-list)

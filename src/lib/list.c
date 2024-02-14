@@ -98,3 +98,36 @@ bool list_contains(list_t *list, list_node_t *node) {
 bool list_empty(list_t *list) {
     return (list->head.next == &list->tail && list->tail.prev == &list->head);
 }
+
+// 判断链表是否只有一个有效节点
+bool list_singular(list_t *list) {
+    return (!list_empty(list) && list->head.next->next == &list->tail);
+}
+
+// 判断节点是否为链表的有效尾节点
+bool list_istail(list_t *list, list_node_t *node) {
+    return node->next == &list->tail;
+}
+
+// 判断节点是否为链表的有效头节点
+bool list_ishead(list_t *list, list_node_t *node) {
+    return node->prev == &list->head;
+}
+
+// 链表插入排序
+void list_insert_sort(list_t *list, list_node_t *node, int offset) {
+    // 从链表找到第一个不小于当前节点 key 字段的值的节点，插入到其前面
+    list_node_t *anchor = &list->tail;
+    int key = list_node_key(node, offset);
+    
+    for (list_node_t *ptr = list->head.next; ptr != &list->tail; ptr = ptr->next) {
+        int cmp = list_node_key(ptr, offset);
+        if (cmp >= key) {
+            anchor = ptr;
+            break;
+        }
+    }
+
+    ASSERT_NODE_FREE(node); // 保证此时节点自由
+    list_insert_before(anchor, node); // 插入节点
+}

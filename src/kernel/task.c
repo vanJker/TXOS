@@ -221,30 +221,14 @@ void task_sleep(u32 ms) {
     assert(ms > 0);
 
     // 睡眠的时间片数量向上取整
-    u32 ticks = div_round_up(ms, jiffy);
+    u32 sleep_ticks = div_round_up(ms, jiffy);
 
     // 记录睡眠结束时的全局时间片，因为在那个时刻应该要唤醒任务
     task_t *current = current_task();
-    current->ticks = jiffies + ticks;
+    current->ticks = jiffies + sleep_ticks;
 
-    // 从睡眠链表中找到第一个比当前任务唤醒时间点更晚的任务，进行插入排序
-    list_t *list = &sleeping_queue;
-
-    list_node_t *anchor = &list->tail;
-    for (list_node_t *ptr = list->head.next; ptr != &list->tail; ptr = ptr->next) {
-        task_t *task = element_entry(task_t, node, ptr);
-        
-        if (task->ticks > current->ticks) {
-            anchor = ptr;
-            break;
-        }
-    }
-
-    // 保证当前任务没有位于任何阻塞 / 睡眠队列当中
-    ASSERT_NODE_FREE(&current->node);
-
-    // 插入链表
-    list_insert_before(anchor, &current->node);
+    // 插入排序
+    list_insert_sort(&sleeping_queue, &current->node, list_node_offset(task_t, node, ticks));
 
     // 设置阻塞状态为睡眠
     current->state = TASK_SLEEPING;
