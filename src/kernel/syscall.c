@@ -50,9 +50,9 @@ static u32 sys_test() {
 
     device = dev_find(DEV_ATA_PART, 0);
     assert(device);
-    pid_t pid = current_task()->pid;
-    memset(buf, pid, 512);
-    dev_request(device->dev_id, buf, 1, pid, 0, REQ_WRITE);
+    u32 uid = current_task()->uid;
+    memset(buf, uid, 512);
+    dev_request(device->dev_id, buf, 1, uid, 0, REQ_WRITE);
 
     kfree_page((u32)buf, 1);
 

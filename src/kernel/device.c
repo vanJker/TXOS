@@ -92,7 +92,44 @@ i32 dev_write(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags) {
     return dev->write(dev->dev, buf, count, idx, flags);
 }
 
+// 使用电梯调度算法 (SCAN) 获取所给磁盘请求 req 的下一个请求
+static request_t *next_request(dev_t *dev, request_t *req) {
+    list_t *list = &dev->request_list;
+
+    // 如果磁盘在当前寻道方向上没有待处理的请求，则变换寻道方向
+    // 磁盘设备请求列表按照请求的 LBA 进行排序，即正向为向内寻道，反向为外里寻道
+    if (dev->direction == DIRECT_OUT && list_istail(list, &req->node)) {
+        dev->direction = DIRECT_IN;
+    } else if (dev->direction ==  DIRECT_IN && list_ishead(list, &req->node)) {
+        dev->direction = DIRECT_OUT;
+    }
+
+    // 根据寻道方向获取下一个请求
+    list_node_t *next = NULL;
+    switch (dev->direction) {
+    case DIRECT_OUT:
+        next = req->node.next;
+        break;
+    case DIRECT_IN:
+        next = req->node.prev;
+        break;
+    default:
+        panic("Unknown device direction...\n");
+        break;
+    }
+
+    // 如果没有其它请求则返回 NULL
+    if (list_singular(list)) {
+        return NULL;
+    }
+
+    return element_entry(request_t, node, next);
+}
+
+// 块设备执行请求
 static void do_dev_request(request_t *req) {
+    LOGK("Device %d do request index %d\n", req->dev_id, req->idx);
+
     switch (req->type) {
     case REQ_READ:
         dev_read(req->dev_id, req->buf, req->count, req->idx, req->flags);
@@ -123,22 +160,26 @@ void dev_request(devid_t dev_id, void *buf, size_t count, size_t idx, i32 flags,
     req->buf = buf;
     req->task = current_task();
 
+    LOGK("Device %d request index %d\n", req->dev_id, req->idx);
+
     // 将请求加入对应设备的请求列表，如果设备的请求列表有其它请求，则阻塞等待调度
     // 否则直接执行请求，无需阻塞
+    // 使用插入排序算法，按照 LBA 的大小进行排序
     bool flag = list_empty(&dev->request_list);
-    list_push_back(&dev->request_list, &req->node);
+    // list_push_back(&dev->request_list, &req->node);
+    list_insert_sort(&dev->request_list, &req->node, list_node_offset(request_t, node, idx));
     if (!flag) {
         task_block(req->task, NULL, TASK_BLOCKED);
     }
 
     // 执行对应的请求操作，并移出请求列表
     do_dev_request(req);
+    request_t *next_req = next_request(dev, req);
     list_remove(&req->node);
     kfree(req);
 
-    // 先来先服务 (FCFS)
-    if (!list_empty(&dev->request_list)) {
-        request_t *next_req = element_entry(request_t, node, dev->request_list.head.next);
+    // 电梯调度算法 (SCAN)
+    if (next_req != NULL) {
         assert(next_req->task->magic == XOS_MAGIC); // 检测栈溢出
         task_unblock(next_req->task);
     }
@@ -157,5 +198,6 @@ void device_init() {
         dev->read = NULL;
         dev->write = NULL;
         list_init(&dev->request_list);
+        dev->direction = DIRECT_IN;
     }
 }

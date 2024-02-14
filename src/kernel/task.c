@@ -343,7 +343,7 @@ static void task_build_stack(task_t *task) {
     task_frame->ebx = 0xaa55aa55;
     task_frame->ebp = 0xaa55aa55;
 
-    // 设置紫禁城的内核栈指针
+    // 设置子进程的内核栈指针
     task->stack = (u32 *)addr;
 }
 
@@ -360,9 +360,9 @@ void task_init() {
 
     idle_task = task_create((target_t)idle_thread, "idle", 1, KERNEL_TASK);
     task_create((target_t)init_thread, "init", 5, USER_TASK);
-    task_create((target_t)test_thread, "test", 5, KERNEL_TASK);
-    task_create((target_t)test_thread, "test", 5, KERNEL_TASK);
-    task_create((target_t)test_thread, "test", 5, KERNEL_TASK);
+    task_create((target_t)test_thread, "test", 5, 1);
+    task_create((target_t)test_thread, "test", 5, 5);
+    task_create((target_t)test_thread, "test", 5, 3);
 }
 
 /*******************************

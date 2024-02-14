@@ -50,15 +50,23 @@ typedef struct request_t {
     list_node_t node;   // 请求列表节点
 } request_t;
 
+// 磁头寻道方向
+typedef enum dev_direction_t {
+    DIRECT_IN,  // 向内寻道
+    DIRECT_OUT, // 向外寻道
+} dev_direction_t;
+
+
 // 虚拟设备
 typedef struct dev_t {
-    char name[DEV_NAMELEN]; // 设备名
-    dev_type_t type;        // 设备类型
-    dev_subtype_t subtype;  // 设备具体类型
-    devid_t dev_id;         // 设备号
-    devid_t parent;         // 父设备号
-    void *dev;              // 具体设备位置
-    list_t request_list;    // 块设备请求列表
+    char name[DEV_NAMELEN];     // 设备名
+    dev_type_t type;            // 设备类型
+    dev_subtype_t subtype;      // 设备具体类型
+    devid_t dev_id;             // 设备号
+    devid_t parent;             // 父设备号
+    void *dev;                  // 具体设备位置
+    list_t request_list;        // 块设备请求列表
+    dev_direction_t direction;  // 磁盘寻道方向
 
     // 控制设备
     i32 (*ioctl)(void *dev, dev_cmd_t cmd, void *args, i32 flags);
