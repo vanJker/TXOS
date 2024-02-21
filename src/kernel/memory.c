@@ -53,6 +53,8 @@ typedef struct kmm_t {
 static u32 KERNEL_PAGE_TABLE[] = {
     0x2000,
     0x3000,
+    0x4000,
+    0x5000,
 };
 // 内核地址空间管理器
 static kmm_t kmm = {
@@ -290,7 +292,7 @@ void kernel_map_init() {
 
 // 初始化内核虚拟内存空间位图
 static void kernel_vmap_init() {
-    u8 *bits = (u8 *)0x4000;
+    u8 *bits = (u8 *)KERNEL_VMAP_BITS;
     size_t size = div_round_up((PAGE_IDX(kmm.kernel_space_size) - mm.start_page_idx), 8);
     bitmap_init(&kmm.kernel_vmap, bits, size, mm.start_page_idx);
 }
@@ -468,7 +470,7 @@ page_entry_t *copy_pgdir() {
     page_entry_init(entry, PAGE_IDX(page_dir));
 
     // 对于页目录中的每个有效项，拷贝该项对应的页表，并更新页框的引用数量
-    for (size_t pde_idx = 2; pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
+    for (size_t pde_idx = NELEM(KERNEL_PAGE_TABLE); pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
         page_entry_t *pde = &page_dir[pde_idx];
         if (!pde->present) continue;
 
@@ -503,7 +505,7 @@ void free_pgdir() {
 
     page_entry_t *page_dir = (page_entry_t *)current->page_dir;
     // 对于页目录中的每个有效项，释放该项对应的页表
-    for (size_t pde_idx = 2; pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
+    for (size_t pde_idx = NELEM(KERNEL_PAGE_TABLE); pde_idx < PAGE_ENTRY_SIZE - 1; pde_idx++) {
         page_entry_t *pde = &page_dir[pde_idx];
         if (!pde->present) continue;
 

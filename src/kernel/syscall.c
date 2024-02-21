@@ -7,6 +7,7 @@
 #include <xos/console.h>
 #include <xos/device.h>
 #include <xos/string.h>
+#include <xos/buffer.h>
 
 extern void sys_exit(i32 status);
 extern void sys_fork();
@@ -46,15 +47,16 @@ static u32 sys_test() {
     // assert(device);
     // dev_write(device->dev_id, &ch, 1, 0, DEBUG);
 
-    void *buf = (void *)kalloc_page(1);
-
-    device = dev_find(DEV_ATA_PART, 0);
+    device = dev_find(DEV_ATA_DISK, 0);
     assert(device);
-    u32 uid = current_task()->uid;
-    memset(buf, uid, 512);
-    dev_request(device->dev_id, buf, 1, uid, 0, REQ_WRITE);
-
-    kfree_page((u32)buf, 1);
+    // 读取主磁盘第 0 个块
+    buffer_t *bf = bread(device->dev_id, 0);
+    // 设置第 1 个扇区为 0x5a
+    memset((bf->data + SECTOR_SIZE), 0x5a, SECTOR_SIZE);
+    // 写回磁盘并释放
+    bf->dirty = true;
+    bwrite(bf);
+    brelse(bf);
 
     return 255;
 }

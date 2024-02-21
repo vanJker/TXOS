@@ -15,6 +15,7 @@ extern void tss_init();
 extern void arena_init();
 extern void ata_init();
 extern void device_init();
+extern void buffer_init();
 
 void kernel_init() {
     device_init();
@@ -30,6 +31,7 @@ void kernel_init() {
     time_init();
     // rtc_init();
     ata_init();
+    buffer_init();
     task_init();
     syscall_init();
 

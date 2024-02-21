@@ -172,7 +172,7 @@ void task_yield() {
     schedule();
 }
 
-// 阻塞任务
+// 阻塞任务 (先进先出)
 void task_block(task_t *task, list_t *blocked_list, task_state_t state) {
     // 涉及阻塞队列这个临界区
     ASSERT_IRQ_DISABLE();
@@ -360,9 +360,7 @@ void task_init() {
 
     idle_task = task_create((target_t)idle_thread, "idle", 1, KERNEL_TASK);
     task_create((target_t)init_thread, "init", 5, USER_TASK);
-    task_create((target_t)test_thread, "test", 5, 1);
-    task_create((target_t)test_thread, "test", 5, 5);
-    task_create((target_t)test_thread, "test", 5, 3);
+    task_create((target_t)test_thread, "test", 5, KERNEL_TASK);
 }
 
 /*******************************

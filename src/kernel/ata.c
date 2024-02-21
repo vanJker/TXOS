@@ -253,7 +253,6 @@ i32 ata_pio_write(ata_disk_t *disk, void *buf, u8 count, size_t lba) {
             bus->waiter = task;
             task_block(task, NULL, TASK_BLOCKED);
         }
-        task_sleep(100);
         ata_busy_wait(bus, ATA_SR_NULL); // 等待写入数据完成
     }
 

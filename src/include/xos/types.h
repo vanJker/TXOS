@@ -29,6 +29,7 @@
 #define NELEM(a) (sizeof(a) / sizeof(a[0]))
 
 typedef unsigned int size_t;
+typedef unsigned int uptr;
 
 // 有符号数
 typedef char      i8;

@@ -43,7 +43,6 @@ void test_thread() {
     // u32 counter = 0;
 
     test();
-    LOGK("test finished of task %d\n", getpid());
     while (true) {
         // printf("test task %d...\n", counter++);
         // printf("test thread pid: %d, ppid: %d, counter: %d\n", getpid(), getppid(), counter++);
