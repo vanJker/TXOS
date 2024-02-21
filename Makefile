@@ -1,4 +1,3 @@
-
 TARGET := ./target
 SRC	:= ./src
 
@@ -10,9 +9,9 @@ LOADER_BIN := $(TARGET)/bootloader/loader.bin
 
 MULTIBOOT2 := 0x10000
 KERNEL_ENTRY := 0x10040
-KERNEL_ELF := $(TARGET)/kernel.elf
-KERNEL_BIN := $(TARGET)/kernel.bin
-KERNEL_SYM := $(TARGET)/kernel.map
+SYSTEM_ELF := $(TARGET)/system.elf
+SYSTEM_BIN := $(TARGET)/system.bin
+SYSTEM_SYM := $(TARGET)/system.map
 
 # ld 的目标文件参数次序必须满足依赖次序，且保证第一条指令在 $(KERNEL_ENTRY) 地址处
 # 所以必须要将 start.o 置于 ld 命令的链接第一个参数位置
@@ -85,18 +84,18 @@ $(TARGET)/lib/%.o: $(SRC)/lib/%.c
 	$(shell mkdir -p $(dir $@))
 	gcc $(CFLAGS) $(DEBUG_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
-$(KERNEL_ELF): $(KERNEL_OBJS) $(LIB_OBJS)
+$(SYSTEM_ELF): $(KERNEL_OBJS) $(LIB_OBJS)
 	$(shell mkdir -p $(dir $@))
 	ld $(LDFLAGS) $^ -o $@
 
-$(KERNEL_BIN): $(KERNEL_ELF)
+$(SYSTEM_BIN): $(SYSTEM_ELF)
 	objcopy -O binary $< $@
 
-$(KERNEL_SYM): $(KERNEL_ELF)
+$(SYSTEM_SYM): $(SYSTEM_ELF)
 	nm $< | sort > $@
 
 
-$(TARGET)/master.img: $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM) $(SRC)/utils/master.sfdisk
+$(TARGET)/master.img: $(BOOT_BIN) $(LOADER_BIN) $(SYSTEM_BIN) $(SYSTEM_SYM) $(SRC)/utils/master.sfdisk
 # 创建一个 16M 的硬盘镜像
 	yes | bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat $@
 # 将 boot.bin 写入主引导扇区
@@ -104,9 +103,9 @@ $(TARGET)/master.img: $(BOOT_BIN) $(LOADER_BIN) $(KERNEL_BIN) $(KERNEL_SYM) $(SR
 # 将 loader.bin 写入硬盘
 	dd if=$(LOADER_BIN) of=$@ bs=512 count=4 seek=2 conv=notrunc
 # 测试 system.bin 小于 100k，否则需要修改下面的 count
-	test -n "$$(find $(TARGET)/kernel.bin -size -100k)"
-# 将 kernel.bin 写入硬盘
-	dd if=$(KERNEL_BIN) of=$@ bs=512 count=200 seek=10 conv=notrunc
+	test -n "$$(find $(SYSTEM_BIN) -size -100k)"
+# 将 system.bin 写入硬盘
+	dd if=$(SYSTEM_BIN) of=$@ bs=512 count=200 seek=10 conv=notrunc
 # 对硬盘进行分区
 	sfdisk $@ < $(SRC)/utils/master.sfdisk
 
@@ -158,8 +157,10 @@ vmdk: $(VMDK)
 .PHONY: all
 all: qemu-run
 
+include $(SRC)/utils/grub.mk
+
 .PHONY: build
-build: $(IMG)
+build: $(IMG) $(ISO)
 
 .PHONY: clean
 clean:

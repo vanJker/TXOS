@@ -1,10 +1,10 @@
 # iso 格式的内核镜像
-ISO := $(TARGET)/systerm.iso
+ISO := $(TARGET)/system.iso
 
 # grub 启动的配置文件
 GRUB_CFG := $(SRC)/utils/grub.cfg
 
-$(ISO): $(KERNEL_ELF) $(GRUB_CFG)
+$(ISO): $(SYSTEM_ELF) $(GRUB_CFG)
 # 检测内核目标文件是否合法
 	grub-file --is-x86-multiboot2 $<
 # 创建 iso 目录
