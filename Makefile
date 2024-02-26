@@ -40,6 +40,9 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/device.o \
 			   $(TARGET)/kernel/buffer.o \
 
+# fs 的目标文件
+FS_OBJS := $(patsubst $(SRC)/fs/%.c, $(TARGET)/fs/%.o, $(wildcard $(SRC)/fs/*.c))
+
 # lib 的目标文件
 LIB_OBJS := $(patsubst $(SRC)/lib/%.c, $(TARGET)/lib/%.o, $(wildcard $(SRC)/lib/*.c))
 
@@ -80,11 +83,15 @@ $(TARGET)/kernel/%.o: $(SRC)/kernel/%.c
 	$(shell mkdir -p $(dir $@))
 	gcc $(CFLAGS) $(DEBUG_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
+$(TARGET)/fs/%.o: $(SRC)/fs/%.c
+	$(shell mkdir -p $(dir $@))
+	gcc $(CFLAGS) $(DEBUG_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+
 $(TARGET)/lib/%.o: $(SRC)/lib/%.c
 	$(shell mkdir -p $(dir $@))
 	gcc $(CFLAGS) $(DEBUG_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
-$(SYSTEM_ELF): $(KERNEL_OBJS) $(LIB_OBJS)
+$(SYSTEM_ELF): $(KERNEL_OBJS) $(FS_OBJS) $(LIB_OBJS)
 	$(shell mkdir -p $(dir $@))
 	ld $(LDFLAGS) $^ -o $@
 

@@ -1,7 +1,7 @@
 label: dos
 label-id: 0x00000000
-device: target/master.img
+device: target/slave.img
 unit: sectors
 sector-size: 512
 
-target/master.img1 : start=        2048, size=       16384, type=83
+target/master.img1 : start=        2048, size=       63472, type=83

@@ -4,4 +4,4 @@ device: target/master.img
 unit: sectors
 sector-size: 512
 
-target/master.img1 : start=        2048, size=       16384, type=83
+target/master.img1 : start=        2048, size=       30208, type=83

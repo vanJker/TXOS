@@ -8,7 +8,7 @@
             "name": "xos - Build and debug kernel",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/target/kernel.elf",
+            "program": "${workspaceFolder}/target/system.elf",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

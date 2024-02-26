@@ -1,4 +1,4 @@
-# 创建文件系统
+# 082 创建文件系统
 
 ## 文件系统
 
@@ -64,10 +64,8 @@ umount0: /dev/loop0
 
 为了简单起见，我们将 master.img 和 slave.img 都设置为只划分一个分区：
 
-> utils/master.sfdisk 和 utils/slave.sfdisk
-```
-target/master.img1 : start=        2048, size=       16384, type=83
-```
+- utils/master.sfdisk 
+- utils/slave.sfdisk
 
 - [077 硬盘分区](../09_device_driver/077_disk_partition.md)
 
