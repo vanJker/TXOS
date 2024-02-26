@@ -36,27 +36,16 @@ static void sys_default() {
 
 // 系统调用 test 的处理函数
 static u32 sys_test() {
-    // char ch;
+    char ch;
     dev_t *device;
 
-    // device = dev_find(DEV_KEYBOARD, 0);
-    // assert(device);
-    // dev_read(device->dev_id, &ch, 1, 0, 0);
-
-    // device = dev_find(DEV_CONSOLE, 0);
-    // assert(device);
-    // dev_write(device->dev_id, &ch, 1, 0, DEBUG);
-
-    device = dev_find(DEV_ATA_DISK, 0);
+    device = dev_find(DEV_KEYBOARD, 0);
     assert(device);
-    // 读取主磁盘第 0 个块
-    buffer_t *bf = bread(device->dev_id, 0);
-    // 设置第 1 个扇区为 0x5a
-    memset((bf->data + SECTOR_SIZE), 0x5a, SECTOR_SIZE);
-    // 写回磁盘并释放
-    bf->dirty = true;
-    bwrite(bf);
-    brelse(bf);
+    dev_read(device->dev_id, &ch, 1, 0, 0);
+
+    device = dev_find(DEV_CONSOLE, 0);
+    assert(device);
+    dev_write(device->dev_id, &ch, 1, 0, DEBUG);
 
     return 255;
 }

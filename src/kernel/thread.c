@@ -42,10 +42,10 @@ void test_thread() {
     irq_enable();
     // u32 counter = 0;
 
-    test();
     while (true) {
         // printf("test task %d...\n", counter++);
         // printf("test thread pid: %d, ppid: %d, counter: %d\n", getpid(), getppid(), counter++);
-        sleep(2000);
+        test();
+        sleep(20);
     }
 }

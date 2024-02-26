@@ -16,6 +16,7 @@ extern void arena_init();
 extern void ata_init();
 extern void device_init();
 extern void buffer_init();
+extern void super_init();
 
 void kernel_init() {
     device_init();
@@ -34,6 +35,7 @@ void kernel_init() {
     buffer_init();
     task_init();
     syscall_init();
+    super_init();
 
     irq_enable(); // 打开外中断响应
 
