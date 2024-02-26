@@ -5,59 +5,110 @@
 #include <xos/assert.h>
 #include <xos/debug.h>
 
-// 初始化文件系统 (读取 superblock)
-void super_init() {
+// 系统最多支持 16 个文件系统
+#define SUPERBLOCK_NR 16
+
+// 超级块表
+static superblock_t superblock_table[SUPERBLOCK_NR];
+
+// 根文件系统对应的超级块
+static superblock_t *root;
+
+// 从超级块表中获取一个空闲超级块
+static superblock_t *get_free_superblock() {
+    for (size_t i = 0; i < SUPERBLOCK_NR; i++) {
+        superblock_t *sb = &superblock_table[i];
+        if (sb->dev_id == -1) {
+            return sb;
+        }
+    }
+    panic("no more super block!!!");
+}
+
+// 在超级块表中查找设备号 dev_id 对应的超级块，没有则返回 NULL
+superblock_t *get_superblock(devid_t dev_id) {
+    for (size_t i = 0; i < SUPERBLOCK_NR; i++) {
+        superblock_t *sb = &superblock_table[i];
+        if (sb->dev_id == dev_id) {
+            return sb;
+        }
+    }
+    return NULL;
+}
+
+// 读取设备号 dev_id 对应的超级块
+superblock_t *read_superblock(devid_t dev_id) {
+    // 在超级块表中寻找所需的超级块，如果找到则直接返回
+    superblock_t *sb = get_superblock(dev_id);
+    if (sb) return sb;
+
+    // 否则获取一个空闲超级块并对其进行设置
+    LOGK("Reading super block of device %d\n", dev_id);
+    
+    // 获取空闲超级块
+    sb = get_free_superblock();
+    
+    // 读取超级块并设置
+    buffer_t *buf = bread(dev_id, 1);
+    sb->buf = buf;
+    sb->desc = (super_desc_t *)buf->data;
+    sb->dev_id = dev_id;
+
+    assert(sb->desc->magic == MINIX_MAGIC);
+
+    // 因为可能不需要这么多的位图空间，所以需要将其设置为 0，防止非法访问
+    memset(sb->imaps, 0, sizeof(sb->imaps));
+    memset(sb->zmaps, 0, sizeof(sb->zmaps));
+
+    // 块位图从第 2 块开始，第 0 块为 boot block，第 1 块为 super block
+    size_t idx = 2;
+
+    // 读取 inode 位图
+    for (size_t i = 0; i < sb->desc->imap_blocks; i++) {
+        assert(i < IMAP_MAX_BLOCKS);
+        if (sb->imaps[i] = bread(dev_id, idx)) 
+            idx++;
+        else 
+            panic("unreachable!!!");
+    }
+
+    // 读取块位图
+    for (size_t i = 0; i < sb->desc->zmap_blocks; i++) {
+        assert(i < ZMAP_MAX_BLOCKS);
+        if (sb->zmaps[i] = bread(dev_id, idx)) 
+            idx++;
+        else 
+            panic("unreachable!!!");
+    }
+
+    return sb;
+}
+
+// 挂载根文件系统
+static void mount_root() {
+    LOGK("Mount root file system...\n");
+    
+    // 假设主硬盘的首个分区是根文件系统
     dev_t *dev = dev_find(DEV_ATA_PART, 0);
     assert(dev);
 
-    // 读取引导块和超级块
-    buffer_t *boot  = bread(dev->dev_id, 0);
-    buffer_t *super = bread(dev->dev_id, 1);
+    // 读取根文件系统的超级块
+    root = read_superblock(dev->dev_id);
+}
 
-    // 解析超级块，确认是 MINIX 文件系统
-    super_desc_t *sb = (super_desc_t *)super->data;
-    assert(sb->magic == MINIX_MAGIC);
-
-    // 获取 inode 位图和 zone 位图对应的第一个块
-    buffer_t *imap = bread(dev->dev_id, 2);
-    buffer_t *zmap = bread(dev->dev_id, 2 + sb->imap_blocks);
-
-    // 读取第一个 inode (对应根目录)
-    buffer_t *buf_inode = bread(dev->dev_id, 2 + sb->imap_blocks + sb->zmap_blocks);
-    inode_desc_t *inode = (inode_desc_t *)buf_inode->data;
-
-    // 读取第一个 inode 对应的文件内容 (对应根目录的内容)
-    buffer_t *buf_file = bread(dev->dev_id, inode->zone[0]);
-    dentry_t *dir = (dentry_t *)buf_file->data;
-
-    // 列出根目录的内容
-    inode_desc_t *helloi = NULL;
-    while (dir->inode) {
-        LOGK("inode %04d, name %s\n", dir->inode, dir->name);
-        // 修改 hello.txt 的文件名，并写回磁盘
-        if (strcmp(dir->name, "hello.txt") == 0) {
-            helloi = &((inode_desc_t *)buf_inode->data)[dir->inode - 1];
-            strcpy(dir->name, "world.txt");
-            buf_file->dirty = true;
-            bwrite(buf_file);
-        }
-        dir++;
+// 初始化文件系统
+void super_init() {
+    // 初始化超级块表
+    for (size_t i = 0; i < SUPERBLOCK_NR; i++) {
+        superblock_t *sb = &superblock_table[i];
+        sb->desc = NULL;
+        sb->buf = NULL;
+        sb->dev_id = -1;
+        list_init(&sb->inode_list);
+        sb->iroot = NULL;
+        sb->imount = NULL;
     }
 
-    // 如果没找到 hello 文件，则直接返回
-    if (!helloi) return;
-
-    // 打印文件 hello.txt 的内容
-    buffer_t *buf_hello = bread(dev->dev_id, helloi->zone[0]);
-    LOGK("content: %s\n", buf_hello->data);
-
-    // 修改文件 hello.txt 的内容
-    strcpy((char *)buf_hello->data, "This is modified content...\n");
-    buf_hello->dirty = true;
-    bwrite(buf_hello);
-
-    // 修改文件 hello.txt 的属性
-    helloi->size = strlen(buf_hello->data);
-    buf_inode->dirty = true;
-    bwrite(buf_inode);
+    // 挂载根文件系统
+    mount_root();
 }
