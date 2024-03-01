@@ -179,11 +179,13 @@ void brelse(buffer_t *bf) {
     bf->count--;
     assert(bf->count >= 0);
 
-    // 如果缓存引用计数为 0，则加入空闲链表
-    if (bf->count == 0) {
-        ASSERT_NODE_FREE(&bf->rnode);
-        list_push_front(&free_list, &bf->rnode);
+    // 如果缓存引用计数为 0，直接返回
+    if (bf->count > 0) {
+        return;
     }
+    // 否则加入空闲链表
+    ASSERT_NODE_FREE(&bf->rnode);
+    list_push_front(&free_list, &bf->rnode);
 
     // 如果缓存为脏，则先进行写回
     if (bf->dirty) {
