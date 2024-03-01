@@ -17,7 +17,11 @@ minux 文件系统使用索引表结构
 
 因为 XOS 的 bcache 和 MINIX 文件系统的块大小恰好均为 1K，所以简化了本节的操作，无需进行 bcache 和 fs 之间块的转换（例如，如果 bcache 块大小为 1K，文件系统块大小为 2K，则需要使用 bcache 进行两次读取才能获取文件系统的一个块）。
 
-fs 与 bcache 块还有一个区别点是：**bcache 的块是从 0 开始计数的，而 fs 的块是从 1 开始计数。** 但是在 fs 的块位图 zmap 中，又是以 0 开始计数，这时候需要进行一些转换。inode 也是类似的，从 1 开始计数，但是在 inode 位图 imap 中，又是以 0 开始计数（这样有一些好处，当目录项中 inode 为 0 时表示该目录项无效）
+fs 与 bcache 块还有一个区别点是：**bcache 的块是从 0 开始计数的，而 fs 的块是从 1 开始计数。** inode 也是类似的，从 1 开始计数。从 1 开始计数有一些好处，例如当目录项中 inode 为 0 时表示该目录项无效。虽然是从 1 开始计数，但是因为我们之前设计的数据机构 位图可以支持设定偏移量，所以并没有什么影响。关于 imap 和 zmap 的具体结构，在后续会进行介绍。
+
+Stack Overflow: [Why is root directory always stored in inode two?](https://stackoverflow.com/questions/12768371/why-is-root-directory-always-stored-in-inode-two)
+
+> The first inode number is 1. 0 is used as a NULL value, to indicate that there is no inode. Inode 1 is used to keep track of any bad blocks on the disk; it is essentially a hidden file containing the bad blocks, so that they will not be used by another file. The bad blocks can be recorded using `e2fsck -c`. The filesystem root directory is inode 2.
 
 ## inode
 

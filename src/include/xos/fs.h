@@ -9,6 +9,8 @@
 #define BLOCK_SECS  2                           // 一块占 2 个扇区
 #define BLOCK_SIZE  (BLOCK_SECS * SECTOR_SIZE)  // 块大小 1024B
 
+#define BLOCK_BITS (BLOCK_SIZE * 8) // 一个块的比特数
+
 #define MINIX_MAGIC     0x137F  // MINIX 文件系统魔数
 #define FILENAME_LEN    14      // 文件名长度
 #define IMAP_MAX_BLOCKS 8       // inode 位图可以占据的最大块个数
@@ -73,5 +75,14 @@ typedef struct dentry_t {
 superblock_t *get_superblock(devid_t dev_id);
 // 读取设备号 dev_id 对应的超级块
 superblock_t *read_superblock(devid_t dev_id);
+
+// 分配一个文件块并返回块号 (从 1 开始计数)
+size_t balloc(devid_t dev_id);
+// 释放一个文件块 (块号从 1 开始计数)
+void bfree(devid_t dev_id, size_t nr);
+// 分配一个文件系统 inode 并返回 inode 号 (从 1 开始计数)
+size_t ialloc(devid_t dev_id);
+// 释放一个文件系统 inode (inode 号从 1 开始计数)
+void ifree(devid_t dev_id, size_t nr);
 
 #endif

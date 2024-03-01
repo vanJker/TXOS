@@ -94,6 +94,18 @@ static void mount_root() {
 
     // 读取根文件系统的超级块
     root = read_superblock(dev->dev_id);
+
+    // 读取从硬盘的分区对位图进行测试
+    dev = dev_find(DEV_ATA_PART, 1);
+    assert(dev);
+    superblock_t *sb = read_superblock(dev->dev_id); 
+    size_t nr;
+    
+    nr = ialloc(sb->dev_id);
+    ifree(sb->dev_id, nr);
+
+    nr = balloc(sb->dev_id);
+    bfree(sb->dev_id, nr);
 }
 
 // 初始化文件系统

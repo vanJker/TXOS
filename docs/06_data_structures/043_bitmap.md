@@ -42,6 +42,8 @@ size_t bitmap_insert_nbits(bitmap_t *map, u32 n);
 
 ## 2. 代码分析
 
+TODO: **这里位图的实现未对编码问题进行深入考虑，所以导致了使用 size_t 来装载 EOF，但是如果仅用 == 运算符对 EOF 进行比较是没有问题的**
+
 > 以下代码均位于 `lib/bitmap.c`。由于本节代码比较简单，请对照源码阅读。
 
 - 构造位图相关的操作为：`bitmap_new()` 和 `bitmap_init()`，其实现都十分简单。
