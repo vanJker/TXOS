@@ -95,17 +95,20 @@ static void mount_root() {
     // 读取根文件系统的超级块
     root = read_superblock(dev->dev_id);
 
-    // 读取从硬盘的分区对位图进行测试
-    dev = dev_find(DEV_ATA_PART, 1);
-    assert(dev);
-    superblock_t *sb = read_superblock(dev->dev_id); 
-    size_t nr;
-    
-    nr = ialloc(sb->dev_id);
-    ifree(sb->dev_id, nr);
+    // 初始化根目录 inode
+    root->iroot = iget(dev->dev_id, 1);
 
-    nr = balloc(sb->dev_id);
-    bfree(sb->dev_id, nr);
+    size_t nr = 0;
+    inode_t *inode = iget(dev->dev_id, 1);
+
+    // 获取直接块
+    nr = bmap(inode, 3, true);
+    // 一级间接块
+    nr = bmap(inode, 7 + 7, true);
+    // 二级间接块
+    nr = bmap(inode, 7 + 512 * 3 + 510, true);
+
+    iput(inode);
 }
 
 // 初始化文件系统

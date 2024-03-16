@@ -9,6 +9,7 @@
 #include <xos/stdlib.h>
 #include <xos/global.h>
 #include <xos/arena.h>
+#include <xos/fs.h>
 
 extern void task_switch(task_t *next);
 extern void interrupt_exit();
@@ -151,6 +152,8 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
     task->page_dir = get_kernel_page_dir();
     task->vmap = get_kernel_vmap();
     task->brk = KERNEL_MEMORY_SIZE;
+    task->ipwd = get_root_inode();
+    task->iroot = get_root_inode();
     task->magic = XOS_MAGIC;
 
     return task;

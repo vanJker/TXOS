@@ -9,7 +9,15 @@
 #define BLOCK_SECS  2                           // 一块占 2 个扇区
 #define BLOCK_SIZE  (BLOCK_SECS * SECTOR_SIZE)  // 块大小 1024B
 
-#define BLOCK_BITS (BLOCK_SIZE * 8) // 一个块的比特数
+#define BLOCK_BITS (BLOCK_SIZE * 8)                         // 一个块的比特数
+#define BLOCK_INODES (BLOCK_SIZE / sizeof(inode_desc_t))    // 一个块可容纳的 inode 数
+#define BLOCK_DENTRIES (BLOCK_SIZE / sizeof(dentry_t))      // 一个块可容纳的 dentry 数
+#define BLOCK_INDEXES (BLOCK_SIZE / sizeof(u16))            // 一个块可容纳的索引数
+
+#define DIRECT_BLOCKS (7)                                       // 直接索引的块数
+#define INDIRECT1_BLOCKS BLOCK_INDEXES                          // 一级间接索引的块数
+#define INDIRECT2_BLOCKS (INDIRECT1_BLOCKS * INDIRECT1_BLOCKS)  // 二级间接索引的块数
+#define TOTAL_BLOCKS (DIRECT_BLOCKS + INDIRECT1_BLOCKS + INDIRECT2_BLOCKS) // 一个 inode 可以索引的全部块数
 
 #define MINIX_MAGIC     0x137F  // MINIX 文件系统魔数
 #define FILENAME_LEN    14      // 文件名长度
@@ -71,11 +79,14 @@ typedef struct dentry_t {
     char name[FILENAME_LEN];// 文件名
 } dentry_t;
 
+/* super.c */
 // 在超级块表中查找设备号 dev_id 对应的超级块，没有则返回 NULL
 superblock_t *get_superblock(devid_t dev_id);
 // 读取设备号 dev_id 对应的超级块
 superblock_t *read_superblock(devid_t dev_id);
 
+
+/* fsmap.c */
 // 分配一个文件块并返回块号 (从 1 开始计数)
 size_t balloc(devid_t dev_id);
 // 释放一个文件块 (块号从 1 开始计数)
@@ -84,5 +95,16 @@ void bfree(devid_t dev_id, size_t nr);
 size_t ialloc(devid_t dev_id);
 // 释放一个文件系统 inode (inode 号从 1 开始计数)
 void ifree(devid_t dev_id, size_t nr);
+// 获取 inode 索引的第 nr 个块对应的块号
+// 如果该块不存在且 create 为 true，则创建
+size_t bmap(inode_t *inode, size_t nr, bool create);
+
+/* inode.c */
+// 获取根目录对应的 inode (约定 inode 池的第一个 inode 用于存放根目录对应的 inode)
+inode_t *get_root_inode();
+// 获取设备的第 nr 个 inode
+inode_t *iget(devid_t dev_id, size_t nr);
+// 释放 inode 会 inode 池
+void iput(inode_t *inode);
 
 #endif

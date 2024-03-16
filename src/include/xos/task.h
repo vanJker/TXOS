@@ -48,6 +48,8 @@ typedef struct task_t {
     u32 brk;                    // 任务堆内存最高地址
     i32 status;                 // 进程结束状态
     pid_t waitpid;              // 进程等待的子进程 pid
+    struct inode_t *ipwd;              // 进程当前目录对应 inode
+    struct inode_t *iroot;             // 进程根目录对应 inode
     u32 magic;                  // 内核魔数（用于检测栈溢出）
 } task_t;
 
