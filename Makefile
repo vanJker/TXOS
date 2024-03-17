@@ -39,6 +39,7 @@ KERNEL_OBJS := $(TARGET)/kernel/start.o \
 			   $(TARGET)/kernel/ata.o \
 			   $(TARGET)/kernel/device.o \
 			   $(TARGET)/kernel/buffer.o \
+			   $(TARGET)/kernel/system.o \
 
 # fs 的目标文件
 FS_OBJS := $(patsubst $(SRC)/fs/%.c, $(TARGET)/fs/%.o, $(wildcard $(SRC)/fs/*.c))

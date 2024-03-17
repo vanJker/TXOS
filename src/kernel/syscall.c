@@ -15,6 +15,7 @@ extern pid_t sys_waitpid(pid_t pid, i32 *status);
 extern time_t sys_time();
 extern pid_t sys_getpid();
 extern i32 sys_brk(void *addr);
+extern mode_t sys_umask(mode_t mask);
 extern pid_t sys_getppid();
 extern void sys_yield();
 extern void sys_sleep(u32 ms);
@@ -77,4 +78,5 @@ void syscall_init() {
     syscall_table[SYS_EXIT]     = sys_exit;
     syscall_table[SYS_WAITPID]  = sys_waitpid;
     syscall_table[SYS_TIME]     = sys_time;
+    syscall_table[SYS_UMASK]    = sys_umask;
 }

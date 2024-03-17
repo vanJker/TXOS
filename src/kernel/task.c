@@ -149,11 +149,13 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
     task->ticks = task->priority; // 默认剩余时间 = 优先级
     task->jiffies = 0;
     task->uid = uid;
+    task->gid = 0; // TODO: group id
     task->page_dir = get_kernel_page_dir();
     task->vmap = get_kernel_vmap();
     task->brk = KERNEL_MEMORY_SIZE;
     task->ipwd = get_root_inode();
     task->iroot = get_root_inode();
+    task->umask = 0022; // 对应默认的 0755 (八进制)
     task->magic = XOS_MAGIC;
 
     return task;

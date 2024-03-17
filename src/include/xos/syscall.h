@@ -18,6 +18,7 @@ typedef enum syscall_t {
     SYS_TIME    = 13,
     SYS_GETPID  = 20,
     SYS_BRK     = 45,
+    SYS_UMASK   = 60,
     SYS_GETPPID = 64,
     SYS_YIELD   = 158,
     SYS_SLEEP   = 162,
@@ -57,6 +58,11 @@ pid_t   getpid();
 // brk() change the location of the program break, which defines the 
 // end of the process's data segment.
 i32     brk(void *addr);
+
+// umask() sets the calling process's file mode creation mask (umask) to 
+// mask & 0777 (i.e., only the file permission bits of mask are used), and 
+// returns the previous value of the mask.
+mode_t  umask(mode_t mask);
 
 // getppid() returns the process ID of the parent of the calling process.
 pid_t   getppid();

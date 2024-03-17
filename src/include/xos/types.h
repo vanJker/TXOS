@@ -56,6 +56,9 @@ typedef i32 devid_t;
 // 时间戳 (从 1970-01-01 00:00:00 开始的秒数)
 typedef u32 time_t;
 
+// 文件权限
+typedef u16 mode_t;
+
 // 文件描述符
 typedef i32 fd_t;
 // 系统保留文件描述符

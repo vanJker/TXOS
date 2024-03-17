@@ -41,6 +41,7 @@ typedef struct task_t {
     u32 ticks;                  // 剩余时间片
     u32 jiffies;                // 上次执行时的全局时间片
     u32 uid;                    // 用户 ID
+    u32 gid;                    // 用户组 ID
     pid_t pid;                  // 进程 id
     pid_t ppid;                 // 父进程 id
     u32 page_dir;               // 页目录的物理地址
@@ -48,8 +49,9 @@ typedef struct task_t {
     u32 brk;                    // 任务堆内存最高地址
     i32 status;                 // 进程结束状态
     pid_t waitpid;              // 进程等待的子进程 pid
-    struct inode_t *ipwd;              // 进程当前目录对应 inode
-    struct inode_t *iroot;             // 进程根目录对应 inode
+    struct inode_t *ipwd;       // 进程当前目录对应 inode
+    struct inode_t *iroot;      // 进程根目录对应 inode
+    u16 umask;                  // 进程用户权限
     u32 magic;                  // 内核魔数（用于检测栈溢出）
 } task_t;
 

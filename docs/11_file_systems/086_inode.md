@@ -337,6 +337,6 @@ static void mount_root() {
 - `nr = bmap(inode, 7 + 7, true);` -> 173（分配了两个块，一个是一级间接块，一个是数据块）
 - `nr = bmap(inode, 7 + 512 * 3 + 510, true);` -> 176（分配了三个块，一个二级间接块，一个一级间接块，一个数据块）
 
-## 参考文献
+## 3. 参考文献
 
 - EXT文件系统机制原理详解: https://www.51cto.com/article/603104.html
